@@ -1,5 +1,5 @@
 from pico2d import *
-
+from warior import Warrior
 #----------------------------------------------------------------
 def handle_events():
     global running
@@ -16,7 +16,14 @@ def handle_events():
 #----------------------------------------------------------------
 def init_world():
     global world
+    global warrior
+
+    warrior = Warrior()
     world = []
+
+    world.append(warrior)
+
+
 #----------------------------------------------------------------
 def update_world():
     for object in world:
