@@ -43,6 +43,7 @@ while running:
     handle_events()
     update_world()
     render_world()
+    delay(0.016)
     #추후 deltaTime 적용해보기
 
 close_canvas()
