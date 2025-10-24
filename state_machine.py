@@ -1,5 +1,5 @@
 from event_to_string import event_to_string
-
+#----------------------------------------------------------------
 class StateMachine:
     def __init__(self, start_state, rules):
         self.cur_state = start_state
@@ -22,3 +22,4 @@ class StateMachine:
                 self.cur_state = self.next_state
                 return
         print(f'처리되지 않은 이벤트 {event_to_string(state_event)}가 발생.')
+#----------------------------------------------------------------
