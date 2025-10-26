@@ -2,7 +2,7 @@ from pico2d import *
 from warior import Warrior
 #----------------------------------------------------------------
 def handle_events():
-    global running
+    global running, cur_character
 
     events = get_events()
     for event in events:
@@ -10,14 +10,22 @@ def handle_events():
             running = False
         elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
             running = False
+        elif event.type == SDL_KEYDOWN and event.key == SDLK_f:
+            if cur_character == 'warrior':
+                cur_character = 'girl'
+            else:
+                cur_character = 'warrior'
         else:
-            pass
+            if cur_character == 'warrior':
+                warrior.handle_event(event)
+            else:
+                pass
 
 #----------------------------------------------------------------
 def init_world():
     global world
     global warrior
-
+    cur_character = 'warrior'
     warrior = Warrior()
     world = []
 
