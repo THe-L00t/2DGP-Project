@@ -1,5 +1,6 @@
 from pico2d import *
 from warior import Warrior
+from child import Child
 #----------------------------------------------------------------
 def handle_events():
     global running, cur_character
@@ -19,19 +20,22 @@ def handle_events():
             if cur_character == 'warrior':
                 warrior.handle_event(event)
             else:
+                child.handle_event(event)
                 pass
 
 #----------------------------------------------------------------
 def init_world():
     global world
     global warrior
+    global child
     global cur_character
     cur_character = 'warrior'
     warrior = Warrior()
+    child = Child()
     world = []
 
     world.append(warrior)
-
+    world.append(child)
 
 #----------------------------------------------------------------
 def update_world():
