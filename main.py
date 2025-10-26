@@ -19,9 +19,9 @@ def handle_events():
         else:
             if cur_character == 'warrior':
                 warrior.handle_event(event)
-            else:
+            elif cur_character == 'child':
                 child.handle_event(event)
-                pass
+
 
 #----------------------------------------------------------------
 def init_world():
