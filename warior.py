@@ -8,6 +8,8 @@ class WIdle:
 
     def enter(self, e):
         self.warrior.frame = 0
+        self.warrior.dirx = 0
+        self.warrior.diry = 0
 
     def exit(self, e):
         pass
@@ -26,19 +28,35 @@ class WRun:
         self.warrior = warrior
 
     def enter(self, e):
-        if left_down(e) or right_up(e):
-            self.warrior.dir = -1
+        if left_down(e):
+            self.warrior.dirx -= 1
             self.warrior.face_dir = -1
-        elif right_down(e) or left_up(e):
-            self.warrior.dir = 1
+        elif right_up(e):
+            self.warrior.dirx -= 1
+            self.warrior.face_dir = -1
+        elif right_down(e):
+            self.warrior.dirx += 1
             self.warrior.face_dir = 1
+        elif left_up(e):
+            self.warrior.dirx += 1
+            self.warrior.face_dir = 1
+
+        if up_down(e):
+            self.warrior.diry += 1
+        elif down_up(e):
+            self.warrior.diry += 1
+        elif down_down(e):
+            self.warrior.diry -= 1
+        elif up_up(e):
+            self.warrior.diry -= 1
 
     def exit(self, e):
         pass
 
     def do(self):
         self.warrior.frame = (self.warrior.frame + 1) % 6
-        self.warrior.x += self.warrior.dir * 5
+        self.warrior.x += self.warrior.dirx * 5
+        self.warrior.y += self.warrior.diry * 5
 
     def draw(self):
         if self.warrior.face_dir == 1:
@@ -51,7 +69,8 @@ class Warrior:
     def __init__(self):
         self.x, self.y = 400,300
         self.frame = 0
-        self.dir = 0
+        self.dirx = 0
+        self.diry = 0
         self.face_dir = -1
         self.imageI = load_image('resource/Warrior_Idle.png')
         self.imageR = load_image('resource/Warrior_Run.png')
@@ -63,8 +82,10 @@ class Warrior:
         self.state_machine = StateMachine(
             self.IDLE,
             {
-                self.IDLE:{right_down:self.RUN, left_down:self.RUN, right_up:self.RUN, left_up:self.RUN},
-                self.RUN:{right_up:self.IDLE, left_up:self.IDLE, right_down:self.IDLE, left_down:self.IDLE}
+                self.IDLE:{right_down:self.RUN, left_down:self.RUN, right_up:self.RUN, left_up:self.RUN,
+                           up_down:self.RUN, down_down:self.RUN, up_up:self.RUN, down_up:self.RUN},
+                self.RUN:{right_up:self.IDLE, left_up:self.IDLE, right_down:self.IDLE, left_down:self.IDLE,
+                          up_up:self.IDLE, down_up:self.IDLE, up_down:self.IDLE, down_down:self.IDLE}
             })
 
     def update(self):

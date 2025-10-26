@@ -12,7 +12,7 @@ def handle_events():
             running = False
         elif event.type == SDL_KEYDOWN and event.key == SDLK_f:
             if cur_character == 'warrior':
-                cur_character = 'girl'
+                cur_character = 'child'
             else:
                 cur_character = 'warrior'
         else:
@@ -25,6 +25,7 @@ def handle_events():
 def init_world():
     global world
     global warrior
+    global cur_character
     cur_character = 'warrior'
     warrior = Warrior()
     world = []
