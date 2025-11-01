@@ -29,34 +29,51 @@ class CRun:
 
     def enter(self, e):
         if left_down(e):
-            self.child.dirx -= 1
-            self.child.face_dir = -1
-        elif right_up(e):
-            self.child.dirx -= 1
-            self.child.face_dir = -1
-        elif right_down(e):
-            self.child.dirx += 1
-            self.child.face_dir = 1
+            self.child.keys['left'] = True
         elif left_up(e):
-            self.child.dirx += 1
-            self.child.face_dir = 1
-
-        if up_down(e):
-            self.child.diry += 1
-        elif down_up(e):
-            self.child.diry += 1
-        elif down_down(e):
-            self.child.diry -= 1
+            self.child.keys['left'] = False
+        elif right_down(e):
+            self.child.keys['right'] = True
+        elif right_up(e):
+            self.child.keys['right'] = False
+        elif up_down(e):
+            self.child.keys['up'] = True
         elif up_up(e):
-            self.child.diry -= 1
+            self.child.keys['up'] = False
+        elif down_down(e):
+            self.child.keys['down'] = True
+        elif down_up(e):
+            self.child.keys['down'] = False
 
     def exit(self, e):
         pass
 
     def do(self):
         self.child.frame = (self.child.frame + 1) % 4
+
+        self.child.dirx = 0
+        self.child.diry = 0
+
+        if self.child.keys['right']:
+            self.child.dirx += 1
+        if self.child.keys['left']:
+            self.child.dirx -= 1
+        if self.child.keys['up']:
+            self.child.diry += 1
+        if self.child.keys['down']:
+            self.child.diry -= 1
+
+        if self.child.dirx > 0:
+            self.child.face_dir = 1
+        elif self.child.dirx < 0:
+            self.child.face_dir = -1
+
         self.child.x += self.child.dirx * 5
         self.child.y += self.child.diry * 5
+
+        if not any(self.child.keys.values()):
+            self.child.state_machine.cur_state = self.child.IDLE
+            self.child.IDLE.enter(('STOP', 0))
 
     def draw(self):
         if self.child.face_dir == 1:
@@ -71,6 +88,7 @@ class Child:
         self.dirx = 0
         self.diry = 0
         self.face_dir = 1
+        self.keys = {'left': False, 'right': False, 'up': False, 'down': False}
         self.imageI = load_image('resource/Child_Idle.png')
         self.imageR = load_image('resource/Child_Run.png')
 
@@ -79,10 +97,9 @@ class Child:
         self.state_machine = StateMachine(
             self.IDLE,
             {
-                self.IDLE: {right_down: self.RUN, left_down: self.RUN, right_up: self.RUN, left_up: self.RUN,
-                            up_down: self.RUN, down_down: self.RUN, up_up: self.RUN, down_up: self.RUN},
-                self.RUN: {right_up: self.IDLE, left_up: self.IDLE, right_down: self.IDLE, left_down: self.IDLE,
-                           up_up: self.IDLE, down_up: self.IDLE, up_down: self.IDLE, down_down: self.IDLE}
+                self.IDLE: {right_down: self.RUN, left_down: self.RUN, up_down: self.RUN, down_down: self.RUN},
+                self.RUN: {right_up: self.RUN, left_up: self.RUN, right_down: self.RUN, left_down: self.RUN,
+                           up_up: self.RUN, down_up: self.RUN, up_down: self.RUN, down_down: self.RUN}
             })
     def update(self):
         self.state_machine.update()
