@@ -27,3 +27,11 @@ def down_up(e):
 
 def action_end(e):
     return e[0] == 'ACTION_END'
+
+def a_down(e):
+    return e[0] == 'INPUT' and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_a
+
+def a_down_combo(warrior):
+    def check(e):
+        return e[0] == 'INPUT' and e[1].type == SDL_KEYDOWN and e[1].key == SDLK_a and warrior.can_combo
+    return check
