@@ -18,7 +18,6 @@ class WIdle:
         import time
         self.warrior.frame = (self.warrior.frame +1) % 8
 
-        #콤보 윈도우 체크
         if self.warrior.attack1_end_time:
             elapsed = time.time() - self.warrior.attack1_end_time
             if elapsed > 0.5:
@@ -66,7 +65,6 @@ class WRun:
         import time
         self.warrior.frame = (self.warrior.frame + 1) % 6
 
-        #콤보 윈도우 체크
         if self.warrior.attack1_end_time:
             elapsed = time.time() - self.warrior.attack1_end_time
             if elapsed > 0.5:
@@ -129,7 +127,6 @@ class WAttack1:
         self.warrior.frame = (self.warrior.frame + 1) % 4
 
         if self.warrior.frame == 0:
-            #애니메이션 한 사이클 완료 - 즉시 IDLE/RUN으로 전환
             self.warrior.attack1_end_time = time.time()
             self.warrior.can_combo = True
             print(f"Attack1 완료, 콤보 윈도우 시작: {self.warrior.can_combo}")
@@ -169,7 +166,6 @@ class WAttack2:
         self.warrior.frame = (self.warrior.frame + 1) % 4
 
         if self.warrior.frame == 0:
-            #공격 애니메이션 끝 - 즉시 전환
             if not any(self.warrior.keys.values()):
                 self.warrior.state_machine.cur_state = self.warrior.IDLE
                 self.warrior.IDLE.enter(('STOP', 0))
