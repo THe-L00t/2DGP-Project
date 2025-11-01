@@ -212,10 +212,10 @@ class Warrior:
             self.IDLE,
             {
                 self.IDLE:{right_down:self.RUN, left_down:self.RUN, up_down:self.RUN, down_down:self.RUN,
-                          a_down:self.ATTACK1},
+                          a_down_combo(self):self.ATTACK2, a_down:self.ATTACK1},
                 self.RUN:{right_up:self.RUN, left_up:self.RUN, right_down:self.RUN, left_down:self.RUN,
                           up_up:self.RUN, down_up:self.RUN, up_down:self.RUN, down_down:self.RUN,
-                          a_down:self.ATTACK1},
+                          a_down_combo(self):self.ATTACK2, a_down:self.ATTACK1},
                 self.ATTACK1:{a_down_combo(self):self.ATTACK2}
             })
 
