@@ -33,13 +33,11 @@ class WRun:
             self.warrior.face_dir = -1
         elif right_up(e):
             self.warrior.dirx -= 1
-            self.warrior.face_dir = -1
         elif right_down(e):
             self.warrior.dirx += 1
             self.warrior.face_dir = 1
         elif left_up(e):
             self.warrior.dirx += 1
-            self.warrior.face_dir = 1
 
         if up_down(e):
             self.warrior.diry += 1
@@ -84,8 +82,8 @@ class Warrior:
             {
                 self.IDLE:{right_down:self.RUN, left_down:self.RUN, right_up:self.RUN, left_up:self.RUN,
                            up_down:self.RUN, down_down:self.RUN, up_up:self.RUN, down_up:self.RUN},
-                self.RUN:{right_up:self.IDLE, left_up:self.IDLE, right_down:self.IDLE, left_down:self.IDLE,
-                          up_up:self.IDLE, down_up:self.IDLE, up_down:self.IDLE, down_down:self.IDLE}
+                self.RUN:{right_up:self.IDLE, left_up:self.IDLE, right_down:self.RUN, left_down:self.RUN,
+                          up_up:self.IDLE, down_up:self.IDLE, up_down:self.RUN, down_down:self.RUN}
             })
 
     def update(self):
