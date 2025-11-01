@@ -17,11 +17,16 @@ class CIdle:
     def do(self):
         self.child.frame = (self.child.frame +1) % 6
 
-    def draw(self):
-        if self.child.face_dir == 1:
-            self.child.imageI.clip_draw(self.child.frame * 192,0,192,192,self.child.x,self.child.y)
+    def draw(self, camera=None):
+        if camera:
+            screen_x, screen_y = camera.apply(self.child.x, self.child.y)
         else:
-            self.child.imageI.clip_composite_draw(self.child.frame * 192,0,192,192,0,'h',self.child.x,self.child.y,192,192)
+            screen_x, screen_y = self.child.x, self.child.y
+
+        if self.child.face_dir == 1:
+            self.child.imageI.clip_draw(self.child.frame * 192,0,192,192,screen_x,screen_y)
+        else:
+            self.child.imageI.clip_composite_draw(self.child.frame * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
 #----------------------------------------------------------------
 class CRun:
     def __init__(self, child):
@@ -75,11 +80,16 @@ class CRun:
             self.child.state_machine.cur_state = self.child.IDLE
             self.child.IDLE.enter(('STOP', 0))
 
-    def draw(self):
-        if self.child.face_dir == 1:
-            self.child.imageR.clip_draw(self.child.frame * 192,0,192,192,self.child.x,self.child.y)
+    def draw(self, camera=None):
+        if camera:
+            screen_x, screen_y = camera.apply(self.child.x, self.child.y)
         else:
-            self.child.imageR.clip_composite_draw(self.child.frame * 192,0,192,192,0,'h',self.child.x,self.child.y,192,192)
+            screen_x, screen_y = self.child.x, self.child.y
+
+        if self.child.face_dir == 1:
+            self.child.imageR.clip_draw(self.child.frame * 192,0,192,192,screen_x,screen_y)
+        else:
+            self.child.imageR.clip_composite_draw(self.child.frame * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
 #----------------------------------------------------------------
 class Child:
     def __init__(self):
@@ -105,8 +115,8 @@ class Child:
         self.state_machine.update()
         pass
 
-    def draw(self):
-        self.state_machine.draw()
+    def draw(self, camera=None):
+        self.state_machine.draw(camera)
         pass
 
     def handle_event(self, event):

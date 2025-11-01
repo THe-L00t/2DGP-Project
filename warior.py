@@ -17,11 +17,16 @@ class WIdle:
     def do(self):
         self.warrior.frame = (self.warrior.frame +1) % 8
 
-    def draw(self):
-        if self.warrior.face_dir == 1:
-            self.warrior.imageI.clip_draw(self.warrior.frame * 192,0,192,192,self.warrior.x,self.warrior.y)
+    def draw(self, camera=None):
+        if camera:
+            screen_x, screen_y = camera.apply(self.warrior.x, self.warrior.y)
         else:
-            self.warrior.imageI.clip_composite_draw(self.warrior.frame * 192,0,192,192,0,'h',self.warrior.x,self.warrior.y,192,192)
+            screen_x, screen_y = self.warrior.x, self.warrior.y
+
+        if self.warrior.face_dir == 1:
+            self.warrior.imageI.clip_draw(self.warrior.frame * 192,0,192,192,screen_x,screen_y)
+        else:
+            self.warrior.imageI.clip_composite_draw(self.warrior.frame * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
 #----------------------------------------------------------------
 class WRun:
     def __init__(self, warrior):
@@ -75,11 +80,16 @@ class WRun:
             self.warrior.state_machine.cur_state = self.warrior.IDLE
             self.warrior.IDLE.enter(('STOP', 0))
 
-    def draw(self):
-        if self.warrior.face_dir == 1:
-            self.warrior.imageR.clip_draw(self.warrior.frame * 192,0,192,192,self.warrior.x,self.warrior.y)
+    def draw(self, camera=None):
+        if camera:
+            screen_x, screen_y = camera.apply(self.warrior.x, self.warrior.y)
         else:
-            self.warrior.imageR.clip_composite_draw(self.warrior.frame * 192,0,192,192,0,'h',self.warrior.x,self.warrior.y,192,192)
+            screen_x, screen_y = self.warrior.x, self.warrior.y
+
+        if self.warrior.face_dir == 1:
+            self.warrior.imageR.clip_draw(self.warrior.frame * 192,0,192,192,screen_x,screen_y)
+        else:
+            self.warrior.imageR.clip_composite_draw(self.warrior.frame * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
 
 #----------------------------------------------------------------
 class Warrior:
@@ -109,8 +119,8 @@ class Warrior:
         self.state_machine.update()
         pass
 
-    def draw(self):
-        self.state_machine.draw()
+    def draw(self, camera=None):
+        self.state_machine.draw(camera)
         pass
 
     def handle_event(self, event):
