@@ -5,6 +5,7 @@ from state_machine import StateMachine
 class WIdle:
     def __init__(self, warrior):
         self.warrior = warrior
+        self.animation_speed = 8  # 초당 프레임 수
 
     def enter(self, e):
         self.warrior.frame = 0
@@ -14,9 +15,9 @@ class WIdle:
     def exit(self, e):
         pass
 
-    def do(self):
+    def do(self, delta_time):
         import time
-        self.warrior.frame = (self.warrior.frame +1) % 8
+        self.warrior.frame = (self.warrior.frame + self.animation_speed * delta_time) % 8
 
         if self.warrior.attack1_end_time:
             elapsed = time.time() - self.warrior.attack1_end_time
@@ -32,13 +33,15 @@ class WIdle:
             screen_x, screen_y = self.warrior.x, self.warrior.y
 
         if self.warrior.face_dir == 1:
-            self.warrior.imageI.clip_draw(self.warrior.frame * 192,0,192,192,screen_x,screen_y)
+            self.warrior.imageI.clip_draw(int(self.warrior.frame) * 192,0,192,192,screen_x,screen_y)
         else:
-            self.warrior.imageI.clip_composite_draw(self.warrior.frame * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
+            self.warrior.imageI.clip_composite_draw(int(self.warrior.frame) * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
 #----------------------------------------------------------------
 class WRun:
     def __init__(self, warrior):
         self.warrior = warrior
+        self.animation_speed = 10  # 초당 프레임 수
+        self.move_speed = 300  # 초당 픽셀 수
 
     def enter(self, e):
         if left_down(e):
@@ -61,9 +64,9 @@ class WRun:
     def exit(self, e):
         pass
 
-    def do(self):
+    def do(self, delta_time):
         import time
-        self.warrior.frame = (self.warrior.frame + 1) % 6
+        self.warrior.frame = (self.warrior.frame + self.animation_speed * delta_time) % 6
 
         if self.warrior.attack1_end_time:
             elapsed = time.time() - self.warrior.attack1_end_time
@@ -89,8 +92,8 @@ class WRun:
         elif self.warrior.dirx < 0:
             self.warrior.face_dir = -1
 
-        self.warrior.x += self.warrior.dirx * 5
-        self.warrior.y += self.warrior.diry * 5
+        self.warrior.x += self.warrior.dirx * self.move_speed * delta_time
+        self.warrior.y += self.warrior.diry * self.move_speed * delta_time
 
         if not any(self.warrior.keys.values()):
             self.warrior.state_machine.cur_state = self.warrior.IDLE
@@ -103,14 +106,15 @@ class WRun:
             screen_x, screen_y = self.warrior.x, self.warrior.y
 
         if self.warrior.face_dir == 1:
-            self.warrior.imageR.clip_draw(self.warrior.frame * 192,0,192,192,screen_x,screen_y)
+            self.warrior.imageR.clip_draw(int(self.warrior.frame) * 192,0,192,192,screen_x,screen_y)
         else:
-            self.warrior.imageR.clip_composite_draw(self.warrior.frame * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
+            self.warrior.imageR.clip_composite_draw(int(self.warrior.frame) * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
 
 #----------------------------------------------------------------
 class WAttack1:
     def __init__(self, warrior):
         self.warrior = warrior
+        self.animation_speed = 12  # 초당 프레임 수 (공격은 빠르게)
 
     def enter(self, e):
         self.warrior.frame = 0
@@ -122,11 +126,13 @@ class WAttack1:
     def exit(self, e):
         pass
 
-    def do(self):
+    def do(self, delta_time):
         import time
-        self.warrior.frame = (self.warrior.frame + 1) % 4
+        prev_frame = int(self.warrior.frame)
+        self.warrior.frame = (self.warrior.frame + self.animation_speed * delta_time) % 4
 
-        if self.warrior.frame == 0:
+        # 애니메이션이 한 사이클 완료되었는지 확인 (프레임이 0으로 돌아갈 때)
+        if int(self.warrior.frame) < prev_frame or (prev_frame == 3 and int(self.warrior.frame) == 0):
             self.warrior.attack1_end_time = time.time()
             self.warrior.can_combo = True
             print(f"Attack1 완료, 콤보 윈도우 시작: {self.warrior.can_combo}")
@@ -145,13 +151,14 @@ class WAttack1:
             screen_x, screen_y = self.warrior.x, self.warrior.y
 
         if self.warrior.face_dir == 1:
-            self.warrior.imageA1.clip_draw(self.warrior.frame * 192,0,192,192,screen_x,screen_y)
+            self.warrior.imageA1.clip_draw(int(self.warrior.frame) * 192,0,192,192,screen_x,screen_y)
         else:
-            self.warrior.imageA1.clip_composite_draw(self.warrior.frame * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
+            self.warrior.imageA1.clip_composite_draw(int(self.warrior.frame) * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
 #----------------------------------------------------------------
 class WAttack2:
     def __init__(self, warrior):
         self.warrior = warrior
+        self.animation_speed = 12  # 초당 프레임 수 (공격은 빠르게)
 
     def enter(self, e):
         print("ATTACK2 시작!")
@@ -162,10 +169,12 @@ class WAttack2:
     def exit(self, e):
         pass
 
-    def do(self):
-        self.warrior.frame = (self.warrior.frame + 1) % 4
+    def do(self, delta_time):
+        prev_frame = int(self.warrior.frame)
+        self.warrior.frame = (self.warrior.frame + self.animation_speed * delta_time) % 4
 
-        if self.warrior.frame == 0:
+        # 애니메이션이 한 사이클 완료되었는지 확인
+        if int(self.warrior.frame) < prev_frame or (prev_frame == 3 and int(self.warrior.frame) == 0):
             if not any(self.warrior.keys.values()):
                 self.warrior.state_machine.cur_state = self.warrior.IDLE
                 self.warrior.IDLE.enter(('STOP', 0))
@@ -180,9 +189,9 @@ class WAttack2:
             screen_x, screen_y = self.warrior.x, self.warrior.y
 
         if self.warrior.face_dir == 1:
-            self.warrior.imageA2.clip_draw(self.warrior.frame * 192,0,192,192,screen_x,screen_y)
+            self.warrior.imageA2.clip_draw(int(self.warrior.frame) * 192,0,192,192,screen_x,screen_y)
         else:
-            self.warrior.imageA2.clip_composite_draw(self.warrior.frame * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
+            self.warrior.imageA2.clip_composite_draw(int(self.warrior.frame) * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
 
 #----------------------------------------------------------------
 class Warrior:
@@ -215,8 +224,8 @@ class Warrior:
                 self.ATTACK1:{a_down_combo(self):self.ATTACK2}
             })
 
-    def update(self):
-        self.state_machine.update()
+    def update(self, delta_time):
+        self.state_machine.update(delta_time)
         pass
 
     def draw(self, camera=None):

@@ -2,6 +2,7 @@ from pico2d import *
 from warior import Warrior
 from child import Child
 from camera import Camera
+import time
 #----------------------------------------------------------------
 def handle_events():
     global running, cur_character, camera
@@ -46,16 +47,16 @@ def init_world():
 
 
 #----------------------------------------------------------------
-def update_world():
+def update_world(delta_time):
     for object in world:
-        object.update()
+        object.update(delta_time)
 
     if cur_character == 'warrior':
         camera.set_target(warrior)
     elif cur_character == 'child':
         camera.set_target(child)
 
-    camera.update()
+    camera.update(delta_time)
 #----------------------------------------------------------------
 def render_world():
     clear_canvas()
@@ -67,11 +68,19 @@ running = True
 open_canvas()
 init_world()
 
+# deltaTime 계산을 위한 변수
+previous_time = time.time()
+frame_time = 0.016  # 목표 프레임 시간 (60 FPS)
+
 while running:
+    # deltaTime 계산
+    current_time = time.time()
+    delta_time = current_time - previous_time
+    previous_time = current_time
+
     handle_events()
-    update_world()
+    update_world(delta_time)
     render_world()
-    delay(0.016)
-    #추후 deltaTime 적용해보기
+    delay(frame_time)
 
 close_canvas()
