@@ -41,7 +41,7 @@ class WRun:
     def __init__(self, warrior):
         self.warrior = warrior
         self.animation_speed = 10  # 초당 프레임 수
-        self.move_speed = 300  # 초당 픽셀 수
+        self.move_speed = 300  # 초당 픽셀 수 (5 * 60fps = 300)
 
     def enter(self, e):
         if left_down(e):
@@ -114,7 +114,7 @@ class WRun:
 class WAttack1:
     def __init__(self, warrior):
         self.warrior = warrior
-        self.animation_speed = 12  # 초당 프레임 수 (공격은 빠르게)
+        self.animation_speed = 12  # 초당 프레임 수
 
     def enter(self, e):
         self.warrior.frame = 0
@@ -122,17 +122,27 @@ class WAttack1:
         self.warrior.can_combo = False
         self.warrior.dirx = 0
         self.warrior.diry = 0
+        self.animation_finished = False
 
     def exit(self, e):
         pass
 
     def do(self, delta_time):
         import time
-        prev_frame = int(self.warrior.frame)
+
+        # 이전 프레임의 정수 값 저장
+        prev_frame_int = int(self.warrior.frame)
+
+        # 프레임 업데이트
         self.warrior.frame = (self.warrior.frame + self.animation_speed * delta_time) % 4
 
-        # 애니메이션이 한 사이클 완료되었는지 확인 (프레임이 0으로 돌아갈 때)
-        if int(self.warrior.frame) < prev_frame or (prev_frame == 3 and int(self.warrior.frame) == 0):
+        # 현재 프레임의 정수 값
+        curr_frame_int = int(self.warrior.frame)
+
+        # 프레임이 한 바퀴 돌았는지 확인 (3 -> 0으로 wrap around)
+        # 또는 정확히 0이 되었을 때
+        if not self.animation_finished and (prev_frame_int > curr_frame_int or (prev_frame_int == 3 and curr_frame_int == 0)):
+            self.animation_finished = True
             self.warrior.attack1_end_time = time.time()
             self.warrior.can_combo = True
             print(f"Attack1 완료, 콤보 윈도우 시작: {self.warrior.can_combo}")
@@ -158,7 +168,7 @@ class WAttack1:
 class WAttack2:
     def __init__(self, warrior):
         self.warrior = warrior
-        self.animation_speed = 12  # 초당 프레임 수 (공격은 빠르게)
+        self.animation_speed = 12  # 초당 프레임 수
 
     def enter(self, e):
         print("ATTACK2 시작!")
@@ -167,16 +177,25 @@ class WAttack2:
         self.warrior.attack1_end_time = None
         self.warrior.dirx = 0
         self.warrior.diry = 0
+        self.animation_finished = False
 
     def exit(self, e):
         pass
 
     def do(self, delta_time):
-        prev_frame = int(self.warrior.frame)
+        # 이전 프레임의 정수 값 저장
+        prev_frame_int = int(self.warrior.frame)
+
+        # 프레임 업데이트
         self.warrior.frame = (self.warrior.frame + self.animation_speed * delta_time) % 4
 
-        # 애니메이션이 한 사이클 완료되었는지 확인
-        if int(self.warrior.frame) < prev_frame or (prev_frame == 3 and int(self.warrior.frame) == 0):
+        # 현재 프레임의 정수 값
+        curr_frame_int = int(self.warrior.frame)
+
+        # 프레임이 한 바퀴 돌았는지 확인 (3 -> 0으로 wrap around)
+        if not self.animation_finished and (prev_frame_int > curr_frame_int or (prev_frame_int == 3 and curr_frame_int == 0)):
+            self.animation_finished = True
+
             if not any(self.warrior.keys.values()):
                 self.warrior.state_machine.cur_state = self.warrior.IDLE
                 self.warrior.IDLE.enter(('STOP', 0))

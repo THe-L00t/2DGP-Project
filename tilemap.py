@@ -1,5 +1,11 @@
 from pico2d import *
-from tile import Tile, TILE_EMPTY, TILE_FLOOR, TILE_WALL, TILE_LADDER
+from tile import (Tile,
+                  TILE_WATER, TILE_FLOOR_CENTER, TILE_WALL,
+                  TILE_FLOOR_EDGE_LEFT, TILE_FLOOR_EDGE_RIGHT,
+                  TILE_FLOOR_EDGE_TOP, TILE_FLOOR_EDGE_BOTTOM,
+                  TILE_SLOPE_UP_RIGHT, TILE_SLOPE_UP_LEFT,
+                  # 하위 호환성
+                  TILE_EMPTY, TILE_FLOOR, TILE_LADDER)
 import json
 #----------------------------------------------------------------
 class TileMap:
@@ -48,6 +54,11 @@ class TileMap:
 
         return visible_tiles
 
+    def update(self, delta_time):
+        """모든 타일 업데이트 (애니메이션)"""
+        for tile in self.tiles.values():
+            tile.update(delta_time)
+
     def draw(self, camera):
         visible_tiles = self.get_visible_tiles(camera)
         for tile in visible_tiles:
@@ -94,11 +105,34 @@ class TileMap:
                     self.add_tile(tile_type, x, y, floor_level)
 
     def _char_to_tile_type(self, char):
+        """문자를 타일 타입으로 변환
+
+        기호 설명:
+        ~  : 물/바다 (WATER)
+        =  : 바닥 중앙 (FLOOR_CENTER)
+        [  : 바닥 왼쪽 가장자리 (FLOOR_EDGE_LEFT)
+        ]  : 바닥 오른쪽 가장자리 (FLOOR_EDGE_RIGHT)
+        ^  : 바닥 위쪽 가장자리 (FLOOR_EDGE_TOP)
+        _  : 바닥 아래쪽 가장자리 (FLOOR_EDGE_BOTTOM)
+        /  : 오른쪽 위 슬로프 (SLOPE_UP_RIGHT)
+        \  : 왼쪽 위 슬로프 (SLOPE_UP_LEFT)
+        #  : 벽 (WALL)
+        .  : 빈공간 (하위호환, WATER와 동일)
+        """
         char_map = {
-            '.': TILE_EMPTY,
+            # 새로운 시스템
+            '~': TILE_WATER,
+            '=': TILE_FLOOR_CENTER,
+            '[': TILE_FLOOR_EDGE_LEFT,
+            ']': TILE_FLOOR_EDGE_RIGHT,
+            '^': TILE_FLOOR_EDGE_TOP,
+            '_': TILE_FLOOR_EDGE_BOTTOM,
+            '/': TILE_SLOPE_UP_RIGHT,
+            '\\': TILE_SLOPE_UP_LEFT,
             '#': TILE_WALL,
-            '=': TILE_FLOOR,
-            'H': TILE_LADDER
+            # 하위 호환성
+            '.': TILE_WATER,
+            'H': TILE_SLOPE_UP_RIGHT  # 사다리 -> 슬로프
         }
-        return char_map.get(char, TILE_EMPTY)
+        return char_map.get(char, TILE_WATER)
 #----------------------------------------------------------------

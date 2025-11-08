@@ -75,6 +75,7 @@ def init_world():
 
 #----------------------------------------------------------------
 def update_world(delta_time):
+    tilemap.update(delta_time)
     for object in world:
         object.update(delta_time)
 
