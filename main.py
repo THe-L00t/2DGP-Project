@@ -2,7 +2,21 @@ from pico2d import *
 from warior import Warrior
 from child import Child
 from camera import Camera
+from tilemap import TileMap
 import time
+#----------------------------------------------------------------
+def collide(a, b):
+    """두 객체의 바운딩 박스가 충돌하는지 확인"""
+    left_a, bottom_a, right_a, top_a = a.get_bb()
+    left_b, bottom_b, right_b, top_b = b.get_bb()
+
+    # AABB 충돌 검사
+    if left_a > right_b: return False
+    if right_a < left_b: return False
+    if bottom_a > top_b: return False
+    if top_a < bottom_b: return False
+
+    return True
 #----------------------------------------------------------------
 def handle_events():
     global running, cur_character, camera
@@ -15,9 +29,19 @@ def handle_events():
             running = False
         elif event.type == SDL_KEYDOWN and event.key == SDLK_f:
             if cur_character == 'warrior':
+                # 전사를 정지시키고 Idle 상태로 전환
+                warrior.keys = {'left': False, 'right': False, 'up': False, 'down': False}
+                warrior.state_machine.cur_state = warrior.IDLE
+                warrior.IDLE.enter(('STOP', 0))
+                # 아이로 전환
                 cur_character = 'child'
                 camera.set_target(child)
             else:
+                # 아이를 정지시키고 Idle 상태로 전환
+                child.keys = {'left': False, 'right': False, 'up': False, 'down': False}
+                child.state_machine.cur_state = child.IDLE
+                child.IDLE.enter(('STOP', 0))
+                # 전사로 전환
                 cur_character = 'warrior'
                 camera.set_target(warrior)
         else:
@@ -34,12 +58,15 @@ def init_world():
     global child
     global cur_character
     global camera
+    global tilemap
 
     cur_character = 'warrior'
     warrior = Warrior()
     child = Child()
     camera = Camera()
     camera.set_target(warrior)
+    tilemap = TileMap()
+    tilemap.load_from_file('maps/test_map.json')
     world = []
 
     world.append(child)
@@ -60,6 +87,7 @@ def update_world(delta_time):
 #----------------------------------------------------------------
 def render_world():
     clear_canvas()
+    tilemap.draw(camera)
     for object in world:
         object.draw(camera)
     update_canvas()

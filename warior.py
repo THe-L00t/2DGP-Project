@@ -165,6 +165,8 @@ class WAttack2:
         self.warrior.frame = 0
         self.warrior.can_combo = False
         self.warrior.attack1_end_time = None
+        self.warrior.dirx = 0
+        self.warrior.diry = 0
 
     def exit(self, e):
         pass
@@ -221,7 +223,8 @@ class Warrior:
                 self.RUN:{right_up:self.RUN, left_up:self.RUN, right_down:self.RUN, left_down:self.RUN,
                           up_up:self.RUN, down_up:self.RUN, up_down:self.RUN, down_down:self.RUN,
                           a_down_combo(self):self.ATTACK2, a_down:self.ATTACK1},
-                self.ATTACK1:{a_down_combo(self):self.ATTACK2}
+                self.ATTACK1:{a_down_combo(self):self.ATTACK2},
+                self.ATTACK2:{}
             })
 
     def update(self, delta_time):
@@ -235,4 +238,10 @@ class Warrior:
     def handle_event(self, event):
         self.state_machine.handle_state_event(('INPUT',event))
         pass
+
+    def get_bb(self):
+        # 히트박스 크기 (스프라이트보다 작게 설정)
+        half_width = 40
+        half_height = 40
+        return self.x - half_width, self.y - half_height, self.x + half_width, self.y + half_height
 #----------------------------------------------------------------

@@ -39,4 +39,10 @@ class Tile:
 
     def is_ladder(self):
         return self.tile_type == TILE_LADDER
+
+    def get_bb(self):
+        # 타일의 바운딩 박스 반환
+        world_x, world_y = self.get_world_pos()
+        half_size = Tile.TILE_SIZE // 2
+        return world_x - half_size, world_y - half_size, world_x + half_size, world_y + half_size
 #----------------------------------------------------------------

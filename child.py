@@ -125,4 +125,10 @@ class Child:
     def handle_event(self, event):
         self.state_machine.handle_state_event(('INPUT', event))
         pass
+
+    def get_bb(self):
+        # 히트박스 크기 (스프라이트보다 작게 설정)
+        half_width = 40
+        half_height = 40
+        return self.x - half_width, self.y - half_height, self.x + half_width, self.y + half_height
 #----------------------------------------------------------------
