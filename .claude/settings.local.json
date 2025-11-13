@@ -5,7 +5,8 @@
       "Bash(python:*)",
       "Bash(mkdir:*)",
       "Bash(pip install:*)",
-      "Bash(dir:*)"
+      "Bash(dir:*)",
+      "Bash(git mv:*)"
     ],
     "deny": [],
     "ask": []

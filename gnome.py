@@ -1,0 +1,209 @@
+from pico2d import *
+from state_machine import StateMachine
+import random
+
+#----------------------------------------------------------------
+# Gnome - 무작위 이동 및 공격 몬스터
+#----------------------------------------------------------------
+
+class GnomeIdle:
+    """Gnome의 대기 상태"""
+    def __init__(self, gnome):
+        self.gnome = gnome
+        self.animation_speed = 7  # 초당 프레임 수
+        self.idle_time = 0
+        self.max_idle_time = 1.0  # 1초 대기 후 이동
+
+    def enter(self, e):
+        self.gnome.frame = 0
+        self.gnome.dirx = 0
+        self.gnome.diry = 0
+        self.idle_time = 0
+
+    def exit(self, e):
+        pass
+
+    def do(self, delta_time):
+        # TODO: 애니메이션 프레임 수를 실제 이미지에 맞게 수정하세요
+        self.gnome.frame = (self.gnome.frame + self.animation_speed * delta_time) % 8
+
+        # 대기 시간 체크
+        self.idle_time += delta_time
+        if self.idle_time >= self.max_idle_time:
+            # 무작위로 RUN 또는 ATTACK 상태로 전환
+            next_state = random.choice([self.gnome.RUN, self.gnome.ATTACK])
+            self.gnome.state_machine.cur_state = next_state
+            next_state.enter(('AUTO_TRANSITION', 0))
+
+    def draw(self, camera=None):
+        if camera:
+            screen_x, screen_y = camera.apply(self.gnome.x, self.gnome.y)
+        else:
+            screen_x, screen_y = self.gnome.x, self.gnome.y
+
+        # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
+        if self.gnome.face_dir == 1:
+            self.gnome.imageI.clip_draw(int(self.gnome.frame) * 192, 0, 192, 192, screen_x, screen_y)
+        else:
+            self.gnome.imageI.clip_composite_draw(int(self.gnome.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+
+#----------------------------------------------------------------
+class GnomeAttack:
+    """Gnome의 공격 상태"""
+    def __init__(self, gnome):
+        self.gnome = gnome
+        self.animation_speed = 10  # 초당 프레임 수
+        self.attack_time = 0
+        self.max_attack_time = 1.5  # 1.5초 공격 후 다른 상태로 전환
+
+    def enter(self, e):
+        self.gnome.frame = 0
+        self.attack_time = 0
+        self.gnome.dirx = 0
+        self.gnome.diry = 0
+
+    def exit(self, e):
+        pass
+
+    def do(self, delta_time):
+        # TODO: 애니메이션 프레임 수를 실제 이미지에 맞게 수정하세요
+        self.gnome.frame = (self.gnome.frame + self.animation_speed * delta_time) % 6
+
+        # 공격 시간 체크
+        self.attack_time += delta_time
+        if self.attack_time >= self.max_attack_time:
+            # 공격 후 IDLE 또는 RUN 상태로 전환
+            next_state = random.choice([self.gnome.IDLE, self.gnome.RUN])
+            self.gnome.state_machine.cur_state = next_state
+            next_state.enter(('AUTO_TRANSITION', 0))
+
+    def draw(self, camera=None):
+        if camera:
+            screen_x, screen_y = camera.apply(self.gnome.x, self.gnome.y)
+        else:
+            screen_x, screen_y = self.gnome.x, self.gnome.y
+
+        # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
+        if self.gnome.face_dir == 1:
+            self.gnome.imageA.clip_draw(int(self.gnome.frame) * 192, 0, 192, 192, screen_x, screen_y)
+        else:
+            self.gnome.imageA.clip_composite_draw(int(self.gnome.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+
+#----------------------------------------------------------------
+class GnomeRun:
+    """Gnome의 이동 상태"""
+    def __init__(self, gnome):
+        self.gnome = gnome
+        self.animation_speed = 9  # 초당 프레임 수
+        self.move_speed = 200  # 초당 픽셀 수
+        self.run_time = 0
+        self.max_run_time = 2.0  # 2초 이동 후 다른 상태로 전환
+
+    def enter(self, e):
+        self.gnome.frame = 0
+        self.run_time = 0
+
+        # 상하좌우 무작위 방향 선택 (8방향)
+        directions = [
+            (1, 0),    # 우
+            (-1, 0),   # 좌
+            (0, 1),    # 상
+            (0, -1),   # 하
+            (1, 1),    # 우상
+            (1, -1),   # 우하
+            (-1, 1),   # 좌상
+            (-1, -1)   # 좌하
+        ]
+        chosen_dir = random.choice(directions)
+        self.gnome.dirx = chosen_dir[0]
+        self.gnome.diry = chosen_dir[1]
+
+        # 좌우 방향만 face_dir에 반영
+        if self.gnome.dirx != 0:
+            self.gnome.face_dir = self.gnome.dirx
+
+    def exit(self, e):
+        pass
+
+    def do(self, delta_time):
+        # TODO: 애니메이션 프레임 수를 실제 이미지에 맞게 수정하세요
+        self.gnome.frame = (self.gnome.frame + self.animation_speed * delta_time) % 6
+
+        # 대각선 이동 시 속도 보정 (√2로 나눔)
+        if self.gnome.dirx != 0 and self.gnome.diry != 0:
+            normalized_speed = self.move_speed / 1.414
+        else:
+            normalized_speed = self.move_speed
+
+        # 무작위 방향으로 이동
+        self.gnome.x += self.gnome.dirx * normalized_speed * delta_time
+        self.gnome.y += self.gnome.diry * normalized_speed * delta_time
+
+        # 이동 시간 체크
+        self.run_time += delta_time
+        if self.run_time >= self.max_run_time:
+            # 이동 후 IDLE 또는 ATTACK 상태로 전환
+            next_state = random.choice([self.gnome.IDLE, self.gnome.ATTACK])
+            self.gnome.state_machine.cur_state = next_state
+            next_state.enter(('AUTO_TRANSITION', 0))
+
+    def draw(self, camera=None):
+        if camera:
+            screen_x, screen_y = camera.apply(self.gnome.x, self.gnome.y)
+        else:
+            screen_x, screen_y = self.gnome.x, self.gnome.y
+
+        # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
+        if self.gnome.face_dir == 1:
+            self.gnome.imageR.clip_draw(int(self.gnome.frame) * 192, 0, 192, 192, screen_x, screen_y)
+        else:
+            self.gnome.imageR.clip_composite_draw(int(self.gnome.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+
+#----------------------------------------------------------------
+class Gnome:
+    """무작위 배회 및 공격 몬스터 - IDLE, ATTACK, RUN 상태를 가짐"""
+    def __init__(self, x=600, y=350):
+        self.x, self.y = x, y
+        self.frame = 0
+        self.dirx = 0
+        self.diry = 0
+        self.face_dir = 1
+
+        # TODO: 이미지 파일 경로를 실제 파일로 변경하세요
+        self.imageI = load_image('resource/Gnome_Idle.png')    # 대기 애니메이션
+        self.imageR = load_image('resource/Gnome_Run.png')     # 달리기 애니메이션
+        self.imageA = load_image('resource/Gnome_Attack.png')  # 공격 애니메이션
+
+        # 상태 초기화
+        self.IDLE = GnomeIdle(self)
+        self.ATTACK = GnomeAttack(self)
+        self.RUN = GnomeRun(self)
+
+        # 상태 머신 초기화
+        self.state_machine = StateMachine(
+            self.IDLE,
+            {
+                self.IDLE: {},     # 자동으로 RUN 또는 ATTACK으로 전환
+                self.ATTACK: {},   # 자동으로 IDLE 또는 RUN으로 전환
+                self.RUN: {}       # 자동으로 IDLE 또는 ATTACK으로 전환
+            }
+        )
+
+    def update(self, delta_time):
+        self.state_machine.update(delta_time)
+
+    def draw(self, camera=None):
+        self.state_machine.draw(camera)
+
+    def handle_event(self, event):
+        # AI 몬스터는 플레이어 입력을 받지 않음
+        pass
+
+    def get_bb(self):
+        """충돌 박스"""
+        # TODO: 히트박스 크기를 몬스터에 맞게 조정하세요
+        half_width = 45
+        half_height = 45
+        return self.x - half_width, self.y - half_height, self.x + half_width, self.y + half_height
+
+#----------------------------------------------------------------
