@@ -131,4 +131,8 @@ class Child:
         half_width = 40
         half_height = 40
         return self.x - half_width, self.y - half_height, self.x + half_width, self.y + half_height
+
+    def get_attack_bb(self):
+        """공격 충돌 박스 반환 - Child는 공격이 없으므로 None 반환"""
+        return None
 #----------------------------------------------------------------

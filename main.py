@@ -22,7 +22,7 @@ def collide(a, b):
     return True
 #----------------------------------------------------------------
 def handle_events():
-    global running, cur_character, camera
+    global running, cur_character, camera, show_collision_box
 
     events = get_events()
     for event in events:
@@ -30,6 +30,9 @@ def handle_events():
             running = False
         elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
             running = False
+        elif event.type == SDL_KEYDOWN and event.key == SDLK_0:
+            show_collision_box = not show_collision_box
+            print(f"충돌 박스 표시: {'ON' if show_collision_box else 'OFF'}")
         elif event.type == SDL_KEYDOWN and event.key == SDLK_f:
             if cur_character == 'warrior':
                 # 전사를 정지시키고 Idle 상태로 전환
@@ -65,8 +68,10 @@ def init_world():
     global gnome
     global paddlefish
     global panda
+    global show_collision_box
 
     cur_character = 'warrior'
+    show_collision_box = False  # 충돌 박스 표시 초기값
     warrior = Warrior()
     child = Child()
     camera = Camera()
@@ -107,6 +112,26 @@ def render_world():
     tilemap.draw(camera)
     for object in world:
         object.draw(camera)
+
+    # 충돌 박스 그리기 (디버그용 - 0키로 토글)
+    if show_collision_box:
+        for object in world:
+            # 일반 충돌 박스 (빨간색)
+            left, bottom, right, top = object.get_bb()
+            screen_left, screen_bottom = camera.apply(left, bottom)
+            screen_right, screen_top = camera.apply(right, top)
+            draw_rectangle(screen_left, screen_bottom, screen_right, screen_top)
+
+            # 공격 충돌 박스 (노란색 - 2개의 사각형으로 구분)
+            attack_bb = object.get_attack_bb()
+            if attack_bb:
+                left, bottom, right, top = attack_bb
+                screen_left, screen_bottom = camera.apply(left, bottom)
+                screen_right, screen_top = camera.apply(right, top)
+                # 공격 박스는 2중 사각형으로 표시
+                draw_rectangle(screen_left, screen_bottom, screen_right, screen_top)
+                draw_rectangle(screen_left+1, screen_bottom+1, screen_right-1, screen_top-1)
+
     update_canvas()
 #----------------------------------------------------------------
 running = True

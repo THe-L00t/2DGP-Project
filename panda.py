@@ -232,4 +232,27 @@ class Panda:
         half_height = 35
         return self.x - half_width, self.y - half_height, self.x + half_width, self.y + half_height
 
+    def get_attack_bb(self):
+        """공격 충돌 박스 반환 (공격 중일 때만)"""
+        # 공격 상태가 아니면 None 반환
+        if self.state_machine.cur_state != self.ATTACK:
+            return None
+
+        # TODO: 공격 범위를 조정하세요
+        attack_range = 60  # 공격 범위
+        attack_height = 45 # 공격 박스 높이
+
+        # 바라보는 방향에 따라 공격 박스 위치 설정
+        if self.face_dir == 1:  # 오른쪽
+            left = self.x
+            right = self.x + attack_range
+        else:  # 왼쪽
+            left = self.x - attack_range
+            right = self.x
+
+        bottom = self.y - attack_height // 2
+        top = self.y + attack_height // 2
+
+        return left, bottom, right, top
+
 #----------------------------------------------------------------
