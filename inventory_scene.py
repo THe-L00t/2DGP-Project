@@ -4,29 +4,13 @@
 from pico2d import *
 import game_framework
 
-# Scene 변수
-font = None
-items = []  # 인벤토리 아이템 목록
-
 def enter():
     """Scene 진입 시 호출"""
-    global font, items
-    font = load_font('ENCR10B.TTF', 30)
-
-    # TODO: 실제 인벤토리 아이템 로드
-    # 임시 아이템 목록
-    items = [
-        "Sword",
-        "Shield",
-        "Health Potion x3",
-        "Magic Scroll",
-        "Gold: 150"
-    ]
+    pass
 
 def exit():
     """Scene 종료 시 호출"""
-    global font
-    # 리소스 해제는 pico2d가 자동으로 처리
+    pass
 
 def pause():
     """Scene이 일시정지될 때 호출"""
@@ -48,26 +32,23 @@ def update(delta_time):
     pass
 
 def draw():
-    """렌더링 - 반투명 배경과 인벤토리 UI"""
-    # 반투명 검은색 배경 (사각형으로 표현)
-    # pico2d는 투명도를 직접 지원하지 않으므로 검은 사각형으로 처리
+    """렌더링 - 인벤토리 창"""
+    # 캔버스 크기 가져오기
+    canvas_width = get_canvas_width()
+    canvas_height = get_canvas_height()
 
-    # 인벤토리 창 배경 (중앙에 큰 사각형)
-    draw_rectangle(200, 150, 600, 550)
-    draw_rectangle(202, 152, 598, 548)
-    draw_rectangle(204, 154, 596, 546)
+    # 인벤토리 창 배경 (중앙에 사각형)
+    center_x = canvas_width // 2
+    center_y = canvas_height // 2
+    box_width = 400
+    box_height = 400
 
-    # 타이틀
-    if font:
-        font.draw(300, 500, 'INVENTORY', (255, 255, 255))
+    left = center_x - box_width // 2
+    right = center_x + box_width // 2
+    bottom = center_y - box_height // 2
+    top = center_y + box_height // 2
 
-    # 아이템 목록
-    y_pos = 450
-    for i, item in enumerate(items):
-        if font:
-            font.draw(250, y_pos - i * 40, f"{i+1}. {item}", (200, 200, 200))
-
-    # 안내 메시지
-    if font:
-        small_font = load_font('ENCR10B.TTF', 20)
-        small_font.draw(220, 180, 'Press I or ESC to close', (150, 150, 150))
+    # 3중 사각형으로 테두리 효과
+    draw_rectangle(left, bottom, right, top)
+    draw_rectangle(left + 2, bottom + 2, right - 2, top - 2)
+    draw_rectangle(left + 4, bottom + 4, right - 4, top - 4)

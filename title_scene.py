@@ -12,7 +12,7 @@ def enter():
     """Scene 진입 시 호출"""
     global image
     # TODO: 타이틀 배경 이미지 로드
-    # image = load_image('resource/title_background.png')
+    image = load_image('resource/title.png')
     pass
 
 def exit():
@@ -44,6 +44,11 @@ def update(delta_time):
 
 def draw():
     """렌더링"""
-    # TODO: 타이틀 배경 이미지 그리기
+    # 타이틀 배경 이미지를 창 크기에 맞게 그리기
     if image:
-        image.draw(400, 300)  # 화면 중앙에 그리기 (화면 크기에 맞게 조정 필요)
+        # 캔버스 크기 가져오기
+        canvas_width = get_canvas_width()
+        canvas_height = get_canvas_height()
+
+        # 이미지를 캔버스 크기에 맞게 늘려서 그리기
+        image.draw(canvas_width // 2, canvas_height // 2, canvas_width, canvas_height)
