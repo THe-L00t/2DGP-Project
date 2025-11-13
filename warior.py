@@ -120,9 +120,10 @@ class WAttack1:
         self.warrior.frame = 0
         self.warrior.attack1_end_time = None
         self.warrior.can_combo = False
+        self.animation_finished = False
+        # 공격 시작 시 이동 속도 초기화
         self.warrior.dirx = 0
         self.warrior.diry = 0
-        self.animation_finished = False
 
     def exit(self, e):
         pass
@@ -146,6 +147,10 @@ class WAttack1:
             self.warrior.attack1_end_time = time.time()
             self.warrior.can_combo = True
             print(f"Attack1 완료, 콤보 윈도우 시작: {self.warrior.can_combo}")
+
+            # 공격 종료 시 이동 속도 초기화
+            self.warrior.dirx = 0
+            self.warrior.diry = 0
 
             if not any(self.warrior.keys.values()):
                 self.warrior.state_machine.cur_state = self.warrior.IDLE
@@ -175,9 +180,10 @@ class WAttack2:
         self.warrior.frame = 0
         self.warrior.can_combo = False
         self.warrior.attack1_end_time = None
+        self.animation_finished = False
+        # 콤보 연결 시에도 이동 속도 초기화
         self.warrior.dirx = 0
         self.warrior.diry = 0
-        self.animation_finished = False
 
     def exit(self, e):
         pass
@@ -195,6 +201,10 @@ class WAttack2:
         # 프레임이 한 바퀴 돌았는지 확인 (3 -> 0으로 wrap around)
         if not self.animation_finished and (prev_frame_int > curr_frame_int or (prev_frame_int == 3 and curr_frame_int == 0)):
             self.animation_finished = True
+
+            # 공격 종료 시 이동 속도 초기화
+            self.warrior.dirx = 0
+            self.warrior.diry = 0
 
             if not any(self.warrior.keys.values()):
                 self.warrior.state_machine.cur_state = self.warrior.IDLE
