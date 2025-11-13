@@ -3,6 +3,9 @@ from warior import Warrior
 from child import Child
 from camera import Camera
 from tilemap import TileMap
+from gnome import Gnome
+from paddlefish import Paddlefish
+from panda import Panda
 import time
 #----------------------------------------------------------------
 def collide(a, b):
@@ -59,6 +62,9 @@ def init_world():
     global cur_character
     global camera
     global tilemap
+    global gnome
+    global paddlefish
+    global panda
 
     cur_character = 'warrior'
     warrior = Warrior()
@@ -67,10 +73,20 @@ def init_world():
     camera.set_target(warrior)
     tilemap = TileMap()
     tilemap.load_from_file('maps/test_map.json')
+
+    # 몬스터 생성 (화면 중앙 근처에 배치)
+    gnome = Gnome(x=600, y=400)
+    gnome.set_target_character(warrior)  # Gnome이 warrior를 추적하도록 설정
+    paddlefish = Paddlefish(x=800, y=400)
+    panda = Panda(x=1000, y=400)
+
     world = []
 
     world.append(child)
     world.append(warrior)
+    world.append(gnome)
+    world.append(paddlefish)
+    world.append(panda)
 
 
 #----------------------------------------------------------------

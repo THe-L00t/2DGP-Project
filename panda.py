@@ -24,7 +24,7 @@ class PandaIdle:
 
     def do(self, delta_time):
         # TODO: 애니메이션 프레임 수를 실제 이미지에 맞게 수정하세요
-        self.panda.frame = (self.panda.frame + self.animation_speed * delta_time) % 6
+        self.panda.frame = (self.panda.frame + self.animation_speed * delta_time) % 10
 
         # 대기 시간 체크
         self.idle_time += delta_time
@@ -42,9 +42,9 @@ class PandaIdle:
 
         # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
         if self.panda.face_dir == 1:
-            self.panda.imageI.clip_draw(int(self.panda.frame) * 192, 0, 192, 192, screen_x, screen_y)
+            self.panda.imageI.clip_draw(int(self.panda.frame) * 256, 0, 256, 256, screen_x, screen_y)
         else:
-            self.panda.imageI.clip_composite_draw(int(self.panda.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+            self.panda.imageI.clip_composite_draw(int(self.panda.frame) * 256, 0, 256, 256, 0, 'h', screen_x, screen_y, 256, 256)
 
 #----------------------------------------------------------------
 class PandaAttack:
@@ -64,7 +64,7 @@ class PandaAttack:
 
     def do(self, delta_time):
         # TODO: 애니메이션 프레임 수를 실제 이미지에 맞게 수정하세요
-        self.panda.frame = (self.panda.frame + self.animation_speed * delta_time) % 6
+        self.panda.frame = (self.panda.frame + self.animation_speed * delta_time) % 13
 
         # 공격 시간 체크
         self.attack_time += delta_time
@@ -82,9 +82,9 @@ class PandaAttack:
 
         # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
         if self.panda.face_dir == 1:
-            self.panda.imageA.clip_draw(int(self.panda.frame) * 192, 0, 192, 192, screen_x, screen_y)
+            self.panda.imageA.clip_draw(int(self.panda.frame) * 256, 0, 256, 256, screen_x, screen_y)
         else:
-            self.panda.imageA.clip_composite_draw(int(self.panda.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+            self.panda.imageA.clip_composite_draw(int(self.panda.frame) * 256, 0, 256, 256, 0, 'h', screen_x, screen_y, 256, 256)
 
 #----------------------------------------------------------------
 class PandaGuard:
@@ -104,7 +104,7 @@ class PandaGuard:
 
     def do(self, delta_time):
         # TODO: 애니메이션 프레임 수를 실제 이미지에 맞게 수정하세요
-        self.panda.frame = (self.panda.frame + self.animation_speed * delta_time) % 4
+        self.panda.frame = (self.panda.frame + self.animation_speed * delta_time) % 8
 
         # 방어 시간 체크
         self.guard_time += delta_time
@@ -122,9 +122,9 @@ class PandaGuard:
 
         # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
         if self.panda.face_dir == 1:
-            self.panda.imageG.clip_draw(int(self.panda.frame) * 192, 0, 192, 192, screen_x, screen_y)
+            self.panda.imageG.clip_draw(int(self.panda.frame) * 256, 0, 256, 256, screen_x, screen_y)
         else:
-            self.panda.imageG.clip_composite_draw(int(self.panda.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+            self.panda.imageG.clip_composite_draw(int(self.panda.frame) * 256, 0, 256, 256, 0, 'h', screen_x, screen_y, 256, 256)
 
 #----------------------------------------------------------------
 class PandaRun:
@@ -151,7 +151,7 @@ class PandaRun:
 
     def do(self, delta_time):
         # TODO: 애니메이션 프레임 수를 실제 이미지에 맞게 수정하세요
-        self.panda.frame = (self.panda.frame + self.animation_speed * delta_time) % 8
+        self.panda.frame = (self.panda.frame + self.animation_speed * delta_time) % 6
 
         # 원형 궤도 이동
         self.angle += self.rotation_speed * delta_time
@@ -180,9 +180,9 @@ class PandaRun:
 
         # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
         if self.panda.face_dir == 1:
-            self.panda.imageR.clip_draw(int(self.panda.frame) * 192, 0, 192, 192, screen_x, screen_y)
+            self.panda.imageR.clip_draw(int(self.panda.frame) * 256, 0, 256, 256, screen_x, screen_y)
         else:
-            self.panda.imageR.clip_composite_draw(int(self.panda.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+            self.panda.imageR.clip_composite_draw(int(self.panda.frame) * 256, 0, 256, 256, 0, 'h', screen_x, screen_y, 256, 256)
 
 #----------------------------------------------------------------
 class Panda:
