@@ -44,6 +44,10 @@ class WRun:
         self.move_speed = 300  # 초당 픽셀 수 (5 * 60fps = 300)
 
     def enter(self, e):
+        # 공격에서 넘어올 때 이동 속도 초기화
+        self.warrior.dirx = 0
+        self.warrior.diry = 0
+
         if left_down(e):
             self.warrior.keys['left'] = True
         elif left_up(e):
@@ -152,6 +156,14 @@ class WAttack1:
             self.warrior.dirx = 0
             self.warrior.diry = 0
 
+            # 키 눌림 상태 확인 (SDL 이벤트로 확인)
+            from sdl2 import SDL_GetKeyboardState, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, SDL_SCANCODE_UP, SDL_SCANCODE_DOWN
+            key_state = SDL_GetKeyboardState(None)
+            self.warrior.keys['left'] = bool(key_state[SDL_SCANCODE_LEFT])
+            self.warrior.keys['right'] = bool(key_state[SDL_SCANCODE_RIGHT])
+            self.warrior.keys['up'] = bool(key_state[SDL_SCANCODE_UP])
+            self.warrior.keys['down'] = bool(key_state[SDL_SCANCODE_DOWN])
+
             if not any(self.warrior.keys.values()):
                 self.warrior.state_machine.cur_state = self.warrior.IDLE
                 self.warrior.IDLE.enter(('STOP', 0))
@@ -205,6 +217,14 @@ class WAttack2:
             # 공격 종료 시 이동 속도 초기화
             self.warrior.dirx = 0
             self.warrior.diry = 0
+
+            # 키 눌림 상태 확인 (SDL 이벤트로 확인)
+            from sdl2 import SDL_GetKeyboardState, SDL_SCANCODE_LEFT, SDL_SCANCODE_RIGHT, SDL_SCANCODE_UP, SDL_SCANCODE_DOWN
+            key_state = SDL_GetKeyboardState(None)
+            self.warrior.keys['left'] = bool(key_state[SDL_SCANCODE_LEFT])
+            self.warrior.keys['right'] = bool(key_state[SDL_SCANCODE_RIGHT])
+            self.warrior.keys['up'] = bool(key_state[SDL_SCANCODE_UP])
+            self.warrior.keys['down'] = bool(key_state[SDL_SCANCODE_DOWN])
 
             if not any(self.warrior.keys.values()):
                 self.warrior.state_machine.cur_state = self.warrior.IDLE
@@ -281,17 +301,17 @@ class Warrior:
             return None
 
         # TODO: 공격 범위를 조정하세요
-        attack_range = 80  # 공격 범위
-        attack_width = 60  # 공격 박스 너비
-        attack_height = 50 # 공격 박스 높이
+        attack_range = 30  # 공격 범위
+        attack_width = 80  # 공격 박스 너비
+        attack_height = 110 # 공격 박스 높이
 
         # 바라보는 방향에 따라 공격 박스 위치 설정
         if self.face_dir == 1:  # 오른쪽
-            left = self.x
-            right = self.x + attack_range
+            left = self.x - attack_width //2
+            right = self.x + attack_range + attack_width//2
         else:  # 왼쪽
-            left = self.x - attack_range
-            right = self.x
+            left = self.x - attack_range- attack_width//2
+            right = self.x + attack_width//2
 
         bottom = self.y - attack_height // 2
         top = self.y + attack_height // 2
