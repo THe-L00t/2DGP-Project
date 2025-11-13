@@ -7,6 +7,37 @@ import math
 # Gnome - 무작위 이동 및 공격 몬스터 (캐릭터 추적 AI)
 #----------------------------------------------------------------
 
+# ============================================================
+# 전역 설정 - 여기서 일괄 수정
+# ============================================================
+PIXEL_WIDTH = 192   # 스프라이트 가로 픽셀 크기
+PIXEL_HEIGHT = 192  # 스프라이트 세로 픽셀 크기
+
+# 애니메이션 프레임 수
+IDLE_FRAMES = 8
+ATTACK_FRAMES = 6
+RUN_FRAMES = 6
+
+# 충돌 박스 크기
+COLLISION_HALF_WIDTH = 45
+COLLISION_HALF_HEIGHT = 45
+
+# 공격 박스 크기
+ATTACK_RANGE = 70
+ATTACK_HEIGHT = 40
+
+# 캐릭터 감지 범위
+DETECTION_RANGE = 300  # 추적 범위
+ATTACK_DETECTION_RANGE = 100  # 공격 범위
+
+# 이동 속도
+MOVE_SPEED = 200
+CHASE_SPEED = 250
+
+# 체력
+MAX_HP = 100
+# ============================================================
+
 class GnomeIdle:
     """Gnome의 대기 상태"""
     def __init__(self, gnome):
@@ -25,23 +56,16 @@ class GnomeIdle:
         pass
 
     def do(self, delta_time):
-        # TODO: 애니메이션 프레임 수를 실제 이미지에 맞게 수정하세요
-        self.gnome.frame = (self.gnome.frame + self.animation_speed * delta_time) % 8
+        self.gnome.frame = (self.gnome.frame + self.animation_speed * delta_time) % IDLE_FRAMES
 
         # 캐릭터 감지 및 상태 전환
         if self.gnome.check_character_in_range():
             distance = self.gnome.get_distance_to_character()
-            # ============================================================
-            # TODO: 공격 범위를 조정하세요 (현재: 100픽셀)
-            # ============================================================
-            if distance < 100:  # 공격 범위
+            if distance < ATTACK_DETECTION_RANGE:  # 공격 범위
                 self.gnome.state_machine.cur_state = self.gnome.ATTACK
                 self.gnome.ATTACK.enter(('DETECT_CHARACTER', 0))
                 return
-            # ============================================================
-            # TODO: 추적 범위를 조정하세요 (현재: 300픽셀)
-            # ============================================================
-            elif distance < 300:  # 추적 범위
+            elif distance < DETECTION_RANGE:  # 추적 범위
                 self.gnome.state_machine.cur_state = self.gnome.CHASE
                 self.gnome.CHASE.enter(('DETECT_CHARACTER', 0))
                 return
@@ -168,17 +192,11 @@ class GnomeRun:
         # 캐릭터 감지 및 상태 전환
         if self.gnome.check_character_in_range():
             distance = self.gnome.get_distance_to_character()
-            # ============================================================
-            # TODO: 공격 범위를 조정하세요 (현재: 100픽셀)
-            # ============================================================
-            if distance < 100:  # 공격 범위
+            if distance < ATTACK_DETECTION_RANGE:  # 공격 범위
                 self.gnome.state_machine.cur_state = self.gnome.ATTACK
                 self.gnome.ATTACK.enter(('DETECT_CHARACTER', 0))
                 return
-            # ============================================================
-            # TODO: 추적 범위를 조정하세요 (현재: 300픽셀)
-            # ============================================================
-            elif distance < 300:  # 추적 범위
+            elif distance < DETECTION_RANGE:  # 추적 범위
                 self.gnome.state_machine.cur_state = self.gnome.CHASE
                 self.gnome.CHASE.enter(('DETECT_CHARACTER', 0))
                 return
@@ -299,6 +317,10 @@ class Gnome:
         self.diry = 0
         self.face_dir = 1
         self.target_character = target_character  # 추적할 캐릭터
+
+        # 체력
+        self.hp = MAX_HP
+        self.max_hp = MAX_HP
 
         # TODO: 이미지 파일 경로를 실제 파일로 변경하세요
         self.imageI = load_image('resource/Gnome_Idle.png')    # 대기 애니메이션

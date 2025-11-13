@@ -7,6 +7,34 @@ import math
 # Panda - 원형 궤도 순찰 및 공격/방어 몬스터
 #----------------------------------------------------------------
 
+# ============================================================
+# 전역 설정 - 여기서 일괄 수정
+# ============================================================
+PIXEL_WIDTH = 192   # 스프라이트 가로 픽셀 크기
+PIXEL_HEIGHT = 192  # 스프라이트 세로 픽셀 크기
+
+# 애니메이션 프레임 수
+IDLE_FRAMES = 6
+ATTACK_FRAMES = 6
+GUARD_FRAMES = 4
+RUN_FRAMES = 8
+
+# 충돌 박스 크기
+COLLISION_HALF_WIDTH = 35
+COLLISION_HALF_HEIGHT = 35
+
+# 공격 박스 크기
+ATTACK_RANGE = 60
+ATTACK_HEIGHT = 45
+
+# 이동 속도
+ROTATION_SPEED = 2.0
+CIRCLE_RADIUS = 100
+
+# 체력
+MAX_HP = 120
+# ============================================================
+
 class PandaIdle:
     """Panda의 대기 상태"""
     def __init__(self, panda):
@@ -191,6 +219,10 @@ class Panda:
         self.x, self.y = x, y
         self.frame = 0
         self.face_dir = 1
+
+        # 체력
+        self.hp = MAX_HP
+        self.max_hp = MAX_HP
 
         # TODO: 이미지 파일 경로를 실제 파일로 변경하세요
         self.imageI = load_image('resource/Panda_Idle.png')    # 대기 애니메이션

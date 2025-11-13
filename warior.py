@@ -255,6 +255,11 @@ class Warrior:
         self.keys = {'left': False, 'right': False, 'up': False, 'down': False}
         self.attack1_end_time = None
         self.can_combo = False
+
+        # 체력
+        self.hp = 200
+        self.max_hp = 200
+
         self.imageI = load_image('resource/Warrior_Idle.png')
         self.imageR = load_image('resource/Warrior_Run.png')
         self.imageA1 = load_image('resource/Warrior_Attack1.png')
