@@ -207,11 +207,11 @@ def check_attack_collisions():
                     print(f"[DEBUG] {target.__class__.__name__}은(는) 이미 이번 공격에 맞음 (스킵)")
                     continue
 
-                # 데미지 적용
+                # 데미지 적용 (넉백을 위해 공격자의 x 좌표 전달)
                 print(f"[DEBUG] *** 충돌 감지! {attacker.__class__.__name__} -> {target.__class__.__name__}")
                 print(f"[DEBUG]     공격 박스: {attack_bb}")
                 print(f"[DEBUG]     타겟 박스: {target_bb}")
-                target.take_damage(attack_power)
+                target.take_damage(attack_power, attacker.x)
                 attacker.hit_targets.add(target_id)
 
 def collide_bb(bb1, bb2):

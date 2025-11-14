@@ -299,12 +299,22 @@ class Panda:
             return self.attack_power
         return 0
 
-    def take_damage(self, damage):
-        """데미지를 받음"""
+    def take_damage(self, damage, attacker_x=None):
+        """데미지를 받음 (넉백 포함)"""
         self.hp -= damage
         if self.hp < 0:
             self.hp = 0
         print(f"Panda가 {damage} 데미지를 받음! (남은 HP: {self.hp}/{self.max_hp})")
+
+        # 넉백 효과 (공격자 위치 기반)
+        if attacker_x is not None:
+            knockback_distance = 20  # 밀려나는 거리
+            if self.x > attacker_x:  # 공격자가 왼쪽에 있으면 오른쪽으로 밀림
+                self.x += knockback_distance
+                print(f"[DEBUG] Panda 넉백: 오른쪽으로 {knockback_distance}px")
+            else:  # 공격자가 오른쪽에 있으면 왼쪽으로 밀림
+                self.x -= knockback_distance
+                print(f"[DEBUG] Panda 넉백: 왼쪽으로 {knockback_distance}px")
 
         if self.hp <= 0:
             print("Panda 사망!")
