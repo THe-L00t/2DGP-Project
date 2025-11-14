@@ -167,6 +167,77 @@ def screen_to_world(screen_x, screen_y):
     world_y = camera.y + screen_y
     return world_x, world_y
 
+def check_attack_collisions():
+    """공격 충돌 체크 및 데미지 처리"""
+    # 모든 오브젝트의 공격 박스를 체크
+    for attacker in world:
+        attack_bb = attacker.get_attack_bb()
+
+        # 공격 중이 아니면 hit_targets 초기화하고 스킵
+        if not attack_bb:
+            if hasattr(attacker, 'hit_targets'):
+                attacker.hit_targets.clear()
+            continue
+
+        # 공격력 가져오기
+        attack_power = attacker.get_current_attack_power()
+        if attack_power <= 0:
+            print(f"[DEBUG] {attacker.__class__.__name__} 공격 중이지만 공격력이 0")
+            continue
+
+        print(f"[DEBUG] {attacker.__class__.__name__} 공격 중! 공격력: {attack_power}, 공격 박스: {attack_bb}")
+
+        # hit_targets 초기화 (처음 공격할 때)
+        if not hasattr(attacker, 'hit_targets'):
+            attacker.hit_targets = set()
+            print(f"[DEBUG] {attacker.__class__.__name__} hit_targets 초기화")
+
+        # 다른 오브젝트와의 충돌 체크
+        for target in world:
+            if attacker == target:
+                continue  # 자기 자신은 제외
+
+            # 타겟의 히트박스와 공격 박스 충돌 체크
+            target_bb = target.get_bb()
+
+            if collide_bb(attack_bb, target_bb):
+                # 이번 공격에서 이미 맞았으면 스킵
+                target_id = id(target)
+                if target_id in attacker.hit_targets:
+                    print(f"[DEBUG] {target.__class__.__name__}은(는) 이미 이번 공격에 맞음 (스킵)")
+                    continue
+
+                # 데미지 적용
+                print(f"[DEBUG] *** 충돌 감지! {attacker.__class__.__name__} -> {target.__class__.__name__}")
+                print(f"[DEBUG]     공격 박스: {attack_bb}")
+                print(f"[DEBUG]     타겟 박스: {target_bb}")
+                target.take_damage(attack_power)
+                attacker.hit_targets.add(target_id)
+
+def collide_bb(bb1, bb2):
+    """두 바운딩 박스가 충돌하는지 확인"""
+    left1, bottom1, right1, top1 = bb1
+    left2, bottom2, right2, top2 = bb2
+
+    # AABB 충돌 검사
+    if left1 > right2: return False
+    if right1 < left2: return False
+    if bottom1 > top2: return False
+    if top1 < bottom2: return False
+
+    return True
+
+def remove_dead_objects():
+    """체력이 0이 된 객체들을 제거"""
+    global world
+
+    # 사망한 객체들을 찾아서 제거
+    dead_objects = [obj for obj in world if hasattr(obj, 'is_alive') and not obj.is_alive]
+
+    for obj in dead_objects:
+        world.remove(obj)
+        print(f"{obj.__class__.__name__}이(가) 월드에서 제거되었습니다.")
+
 def update(delta_time):
     """업데이트"""
     global camera, background_map
@@ -179,6 +250,12 @@ def update(delta_time):
     if not (background_map and background_map.editor_mode):
         for obj in world:
             obj.update(delta_time)
+
+        # 공격 충돌 체크
+        check_attack_collisions()
+
+        # 사망한 객체 제거
+        remove_dead_objects()
 
     # 카메라 타겟 설정
     if cur_character == 'warrior':

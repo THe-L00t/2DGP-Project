@@ -1,7 +1,25 @@
 from pico2d import *
 from event_check import *
 from state_machine import StateMachine
+
 #----------------------------------------------------------------
+# 전역 설정 - 여기서 일괄 수정
+#----------------------------------------------------------------
+# 스프라이트 크기
+PIXEL_WIDTH = 192
+PIXEL_HEIGHT = 192
+
+# 충돌 박스 크기
+COLLISION_HALF_WIDTH = 40
+COLLISION_HALF_HEIGHT = 40
+
+# 이동 속도
+MOVE_SPEED = 250  # 픽셀/초 (Warrior보다 약간 느림)
+
+# 체력 (Child는 비전투 캐릭터)
+MAX_HP = 100
+#----------------------------------------------------------------
+
 class CIdle:
     def __init__(self, child):
         self.child = child
@@ -33,7 +51,7 @@ class CRun:
     def __init__(self, child):
         self.child = child
         self.animation_speed = 8  # 초당 프레임 수
-        self.move_speed = 300  # 초당 픽셀 수
+        self.move_speed = MOVE_SPEED  # 전역 설정에서 가져옴
 
     def enter(self, e):
         if left_down(e):
@@ -102,6 +120,14 @@ class Child:
         self.diry = 0
         self.face_dir = 1
         self.keys = {'left': False, 'right': False, 'up': False, 'down': False}
+
+        # 체력 (전역 설정에서 가져옴)
+        self.hp = MAX_HP
+        self.max_hp = MAX_HP
+
+        # 생존 상태
+        self.is_alive = True
+
         self.imageI = load_image('resource/Child_Idle.png')
         self.imageR = load_image('resource/Child_Run.png')
 
@@ -127,12 +153,26 @@ class Child:
         pass
 
     def get_bb(self):
-        # 히트박스 크기 (스프라이트보다 작게 설정)
-        half_width = 40
-        half_height = 40
-        return self.x - half_width, self.y - half_height, self.x + half_width, self.y + half_height
+        # 히트박스 크기 (전역 설정에서 가져옴)
+        return (self.x - COLLISION_HALF_WIDTH, self.y - COLLISION_HALF_HEIGHT,
+                self.x + COLLISION_HALF_WIDTH, self.y + COLLISION_HALF_HEIGHT)
 
     def get_attack_bb(self):
         """공격 충돌 박스 반환 - Child는 공격이 없으므로 None 반환"""
         return None
+
+    def get_current_attack_power(self):
+        """Child는 공격력이 없음"""
+        return 0
+
+    def take_damage(self, damage):
+        """데미지를 받음"""
+        self.hp -= damage
+        if self.hp < 0:
+            self.hp = 0
+        print(f"Child가 {damage} 데미지를 받음! (남은 HP: {self.hp}/{self.max_hp})")
+
+        if self.hp <= 0:
+            print("Child 사망!")
+            self.is_alive = False
 #----------------------------------------------------------------

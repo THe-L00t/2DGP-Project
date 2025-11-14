@@ -177,6 +177,12 @@ class Paddlefish:
         self.hp = MAX_HP
         self.max_hp = MAX_HP
 
+        # 공격력
+        self.attack_power = 12  # Paddlefish의 공격력
+
+        # 생존 상태
+        self.is_alive = True
+
         # TODO: 이미지 파일 경로를 실제 파일로 변경하세요
         self.imageI = load_image('resource/PaddleFish_Idle.png')    # 대기 애니메이션
         self.imageR = load_image('resource/PaddleFish_Run.png')     # 달리기 애니메이션
@@ -236,5 +242,22 @@ class Paddlefish:
         top = self.y + attack_height // 2
 
         return left, bottom, right, top
+
+    def get_current_attack_power(self):
+        """현재 공격력 반환 (공격 중일 때만)"""
+        if self.state_machine.cur_state == self.ATTACK:
+            return self.attack_power
+        return 0
+
+    def take_damage(self, damage):
+        """데미지를 받음"""
+        self.hp -= damage
+        if self.hp < 0:
+            self.hp = 0
+        print(f"Paddlefish가 {damage} 데미지를 받음! (남은 HP: {self.hp}/{self.max_hp})")
+
+        if self.hp <= 0:
+            print("Paddlefish 사망!")
+            self.is_alive = False
 
 #----------------------------------------------------------------
