@@ -19,12 +19,14 @@ ATTACK_FRAMES = 6
 RUN_FRAMES = 6
 
 # 충돌 박스 크기
-COLLISION_HALF_WIDTH = 45
-COLLISION_HALF_HEIGHT = 45
+COLLISION_HALF_WIDTH = 30
+COLLISION_HALF_HEIGHT = 30
 
-# 공격 박스 크기
-ATTACK_RANGE = 70
-ATTACK_HEIGHT = 40
+# 공격 박스 설정 (몬스터 중심 기준)
+ATTACK_BOX_OFFSET_X = 35   # 몬스터 중심에서 공격 박스 중심까지 X 오프셋 (양수: 오른쪽, 음수: 왼쪽)
+ATTACK_BOX_OFFSET_Y = 0    # 몬스터 중심에서 공격 박스 중심까지 Y 오프셋 (양수: 위, 음수: 아래)
+ATTACK_BOX_WIDTH = 70      # 공격 박스 가로 크기
+ATTACK_BOX_HEIGHT = 60     # 공격 박스 세로 크기
 
 # 캐릭터 감지 범위
 DETECTION_RANGE = 300  # 추적 범위
@@ -413,8 +415,9 @@ class Gnome:
     def get_bb(self):
         """충돌 박스"""
         # TODO: 히트박스 크기를 몬스터에 맞게 조정하세요
-        half_width = 45
-        half_height = 45
+        half_width = COLLISION_HALF_WIDTH
+        half_height = COLLISION_HALF_HEIGHT
+
         return self.x - half_width, self.y - half_height, self.x + half_width, self.y + half_height
 
     def get_attack_bb(self):
@@ -435,20 +438,23 @@ class Gnome:
                 attack_state.has_attacked = True
                 print(f"[DEBUG] Gnome 공격 판정 활성화! (프레임: {current_frame})")
 
-        # TODO: 공격 범위를 조정하세요
-        attack_range = 70  # 공격 범위
-        attack_height = 40 # 공격 박스 높이
-
-        # 바라보는 방향에 따라 공격 박스 위치 설정
+        # 공격 박스 중심 좌표 계산 (몬스터 좌표 + 오프셋)
+        # 바라보는 방향에 따라 X 오프셋 방향 결정
         if self.face_dir == 1:  # 오른쪽
-            left = self.x
-            right = self.x + attack_range
+            attack_center_x = self.x + ATTACK_BOX_OFFSET_X
         else:  # 왼쪽
-            left = self.x - attack_range
-            right = self.x
+            attack_center_x = self.x - ATTACK_BOX_OFFSET_X
 
-        bottom = self.y - attack_height // 2
-        top = self.y + attack_height // 2
+        attack_center_y = self.y + ATTACK_BOX_OFFSET_Y
+
+        # 공격 박스 계산 (중심 좌표와 width, height 기반)
+        half_width = ATTACK_BOX_WIDTH // 2
+        half_height = ATTACK_BOX_HEIGHT // 2
+
+        left = attack_center_x - half_width
+        right = attack_center_x + half_width
+        bottom = attack_center_y - half_height
+        top = attack_center_y + half_height
 
         return left, bottom, right, top
 

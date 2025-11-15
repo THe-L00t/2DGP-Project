@@ -204,6 +204,17 @@ def check_attack_collisions():
             if attacker == target:
                 continue  # 자기 자신은 제외
 
+            # 몬스터끼리는 공격하지 않음
+            attacker_class = attacker.__class__.__name__
+            target_class = target.__class__.__name__
+
+            # 몬스터 클래스 리스트
+            monster_classes = ['Gnome', 'Paddlefish', 'Panda']
+
+            # 공격자와 타겟이 모두 몬스터면 스킵
+            if attacker_class in monster_classes and target_class in monster_classes:
+                continue
+
             # 타겟의 히트박스와 공격 박스 충돌 체크
             target_bb = target.get_bb()
 
