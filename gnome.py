@@ -58,9 +58,23 @@ class GnomeIdle:
     def do(self, delta_time):
         self.gnome.frame = (self.gnome.frame + self.animation_speed * delta_time) % IDLE_FRAMES
 
+        # 쿨다운 감소
+        if self.gnome.attack_cooldown > 0:
+            self.gnome.attack_cooldown -= delta_time
+            if self.gnome.attack_cooldown <= 0:
+                self.gnome.attack_cooldown = 0
+                print(f"[DEBUG] Gnome 쿨다운 종료! 다시 공격 가능")
+
         # 캐릭터 감지 및 상태 전환
         if self.gnome.check_character_in_range():
             distance = self.gnome.get_distance_to_character()
+
+            # 쿨다운 중에는 상태 전환하지 않고 IDLE 유지
+            if self.gnome.attack_cooldown > 0:
+                print(f"[DEBUG] 쿨다운 중... 남은 시간: {self.gnome.attack_cooldown:.2f}초")
+                return
+
+            # 쿨다운이 끝났을 때만 상태 전환
             if distance < ATTACK_DETECTION_RANGE:  # 공격 범위
                 self.gnome.state_machine.cur_state = self.gnome.ATTACK
                 self.gnome.ATTACK.enter(('DETECT_CHARACTER', 0))
@@ -70,12 +84,13 @@ class GnomeIdle:
                 self.gnome.CHASE.enter(('DETECT_CHARACTER', 0))
                 return
 
-        # 대기 시간 체크
-        self.idle_time += delta_time
-        if self.idle_time >= self.max_idle_time:
-            # 무작위로 RUN 상태로 전환
-            self.gnome.state_machine.cur_state = self.gnome.RUN
-            self.gnome.RUN.enter(('AUTO_TRANSITION', 0))
+        # 대기 시간 체크 (쿨다운 중에는 배회하지 않음)
+        if self.gnome.attack_cooldown <= 0:
+            self.idle_time += delta_time
+            if self.idle_time >= self.max_idle_time:
+                # 무작위로 RUN 상태로 전환
+                self.gnome.state_machine.cur_state = self.gnome.RUN
+                self.gnome.RUN.enter(('AUTO_TRANSITION', 0))
 
     def draw(self, camera=None):
         if camera:
@@ -94,46 +109,38 @@ class GnomeAttack:
     """Gnome의 공격 상태"""
     def __init__(self, gnome):
         self.gnome = gnome
-        self.animation_speed = 10  # 초당 프레임 수
+        self.animation_speed = 8  # 초당 프레임 수 (느리게 조정)
         self.attack_time = 0
-        self.max_attack_time = 1.5  # 1.5초 공격 후 다른 상태로 전환
+        self.max_attack_time = 0.75  # 0.75초 공격 애니메이션 (6프레임 / 8fps = 0.75초)
 
     def enter(self, e):
         self.gnome.frame = 0
         self.attack_time = 0
         self.gnome.dirx = 0
         self.gnome.diry = 0
+        self.has_attacked = False  # 공격 판정을 한 번만 하기 위한 플래그
+        print(f"[DEBUG] Gnome ATTACK 상태 진입 (frame: {self.gnome.frame})")
 
     def exit(self, e):
-        pass
+        # 공격 후 쿨다운 시작
+        self.gnome.attack_cooldown = 2.0  # 2초 쿨다운
+        print(f"[DEBUG] Gnome ATTACK 종료, 2초 쿨다운 시작")
 
     def do(self, delta_time):
-        # TODO: 애니메이션 프레임 수를 실제 이미지에 맞게 수정하세요
-        self.gnome.frame = (self.gnome.frame + self.animation_speed * delta_time) % 6
-
-        # 캐릭터가 공격 범위를 벗어났는지 체크
-        if self.gnome.check_character_in_range():
-            distance = self.gnome.get_distance_to_character()
-            # ============================================================
-            # TODO: 공격 범위를 조정하세요 (현재: 100픽셀)
-            # ============================================================
-            if distance >= 100:  # 공격 범위를 벗어남
-                # 추적 범위 내라면 추적, 아니면 IDLE
-                # ============================================================
-                # TODO: 추적 범위를 조정하세요 (현재: 300픽셀)
-                # ============================================================
-                if distance < 300:
-                    self.gnome.state_machine.cur_state = self.gnome.CHASE
-                    self.gnome.CHASE.enter(('TRACK_CHARACTER', 0))
-                else:
-                    self.gnome.state_machine.cur_state = self.gnome.IDLE
-                    self.gnome.IDLE.enter(('LOSE_CHARACTER', 0))
-                return
-
-        # 공격 시간 체크
+        # 공격 시간 증가
         self.attack_time += delta_time
+
+        # 애니메이션 프레임 업데이트 (6프레임, 애니메이션 속도 8fps)
+        self.gnome.frame = (self.gnome.frame + self.animation_speed * delta_time)
+
+        # 애니메이션이 끝까지 재생되도록 보장 (프레임이 6을 넘지 않도록)
+        if self.gnome.frame >= ATTACK_FRAMES:
+            self.gnome.frame = ATTACK_FRAMES - 0.01  # 마지막 프레임에 고정
+
+        # 공격 시간이 끝났는지 체크 (애니메이션 완전 재생 보장)
         if self.attack_time >= self.max_attack_time:
-            # 공격 후 IDLE로 전환
+            print(f"[DEBUG] Gnome 공격 애니메이션 종료 (최종 프레임: {self.gnome.frame:.2f})")
+            # 한 번의 공격 후 무조건 IDLE로 전환 (2초 쿨다운)
             self.gnome.state_machine.cur_state = self.gnome.IDLE
             self.gnome.IDLE.enter(('AUTO_TRANSITION', 0))
 
@@ -192,6 +199,14 @@ class GnomeRun:
         # 캐릭터 감지 및 상태 전환
         if self.gnome.check_character_in_range():
             distance = self.gnome.get_distance_to_character()
+
+            # 쿨다운 중에는 IDLE로 전환 (쿨다운 대기)
+            if self.gnome.attack_cooldown > 0:
+                self.gnome.state_machine.cur_state = self.gnome.IDLE
+                self.gnome.IDLE.enter(('COOLDOWN_WAIT', 0))
+                return
+
+            # 쿨다운이 끝났을 때만 공격/추적
             if distance < ATTACK_DETECTION_RANGE:  # 공격 범위
                 self.gnome.state_machine.cur_state = self.gnome.ATTACK
                 self.gnome.ATTACK.enter(('DETECT_CHARACTER', 0))
@@ -255,6 +270,12 @@ class GnomeChase:
             self.gnome.IDLE.enter(('LOSE_CHARACTER', 0))
             return
 
+        # 쿨다운 중에는 IDLE로 전환 (쿨다운 대기)
+        if self.gnome.attack_cooldown > 0:
+            self.gnome.state_machine.cur_state = self.gnome.IDLE
+            self.gnome.IDLE.enter(('COOLDOWN_WAIT', 0))
+            return
+
         # 캐릭터까지의 거리 계산
         distance = self.gnome.get_distance_to_character()
 
@@ -262,6 +283,7 @@ class GnomeChase:
         # TODO: 공격 범위를 조정하세요 (현재: 100픽셀)
         # ============================================================
         if distance < 100:  # 공격 범위 도달
+            # 쿨다운이 끝났으므로 공격
             self.gnome.state_machine.cur_state = self.gnome.ATTACK
             self.gnome.ATTACK.enter(('REACH_CHARACTER', 0))
             return
@@ -324,6 +346,9 @@ class Gnome:
 
         # 공격력
         self.attack_power = 15  # Gnome의 공격력
+
+        # 공격 쿨다운
+        self.attack_cooldown = 0  # 0이면 공격 가능
 
         # 생존 상태
         self.is_alive = True
@@ -397,6 +422,18 @@ class Gnome:
         # 공격 상태가 아니면 None 반환
         if self.state_machine.cur_state != self.ATTACK:
             return None
+
+        # 공격 애니메이션의 특정 프레임에서만 공격 판정 (프레임 3~4, 중후반부)
+        current_frame = int(self.frame)
+        if not (3 <= current_frame <= 4):
+            return None
+
+        # 공격 판정 플래그 설정 (한 번만 데미지 처리하기 위함)
+        attack_state = self.state_machine.cur_state
+        if hasattr(attack_state, 'has_attacked'):
+            if not attack_state.has_attacked:
+                attack_state.has_attacked = True
+                print(f"[DEBUG] Gnome 공격 판정 활성화! (프레임: {current_frame})")
 
         # TODO: 공격 범위를 조정하세요
         attack_range = 70  # 공격 범위

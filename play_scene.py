@@ -61,6 +61,7 @@ def enter():
     gnome = Gnome(x=600, y=400)
     gnome.set_target_character(warrior)
     paddlefish = Paddlefish(x=800, y=400)
+    paddlefish.set_target_character(warrior)  # 추적 대상 설정
     panda = Panda(x=1000, y=400)
 
     # 월드에 추가
@@ -113,12 +114,18 @@ def handle_events(event):
                 warrior.IDLE.enter(('STOP', 0))
                 cur_character = 'child'
                 camera.set_target(child)
+                # 몬스터들의 추적 대상 변경
+                gnome.set_target_character(child)
+                paddlefish.set_target_character(child)
             else:
                 child.keys = {'left': False, 'right': False, 'up': False, 'down': False}
                 child.state_machine.cur_state = child.IDLE
                 child.IDLE.enter(('STOP', 0))
                 cur_character = 'warrior'
                 camera.set_target(warrior)
+                # 몬스터들의 추적 대상 변경
+                gnome.set_target_character(warrior)
+                paddlefish.set_target_character(warrior)
         else:
             # 에디터 모드가 아닐 때만 캐릭터에게 이벤트 전달
             if not (background_map and background_map.editor_mode):
