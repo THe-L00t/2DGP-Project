@@ -30,7 +30,8 @@ ATTACK_BOX_HEIGHT = 60     # 공격 박스 세로 크기
 
 # 캐릭터 감지 범위
 DETECTION_RANGE = 300  # 추적 범위
-ATTACK_DETECTION_RANGE = 100  # 공격 범위
+ATTACK_DETECTION_RANGE = 50  # 공격 범위 (X축 거리)
+ATTACK_Y_TOLERANCE = 30  # 공격 시 Y축 허용 오차 (캐릭터 Y ± 30 이내여야 공격)
 
 # 이동 속도
 MOVE_SPEED = 200
@@ -278,34 +279,37 @@ class GnomeChase:
             self.gnome.IDLE.enter(('COOLDOWN_WAIT', 0))
             return
 
-        # 캐릭터까지의 거리 계산
-        distance = self.gnome.get_distance_to_character()
+        # 캐릭터 위치 가져오기
+        target_x, target_y = self.gnome.get_character_position()
 
-        # ============================================================
-        # TODO: 공격 범위를 조정하세요 (현재: 100픽셀)
-        # ============================================================
-        if distance < 100:  # 공격 범위 도달
-            # 쿨다운이 끝났으므로 공격
-            self.gnome.state_machine.cur_state = self.gnome.ATTACK
-            self.gnome.ATTACK.enter(('REACH_CHARACTER', 0))
-            return
+        # 캐릭터까지의 X, Y 거리 계산
+        dx = target_x - self.gnome.x
+        dy = target_y - self.gnome.y
 
-        # ============================================================
-        # TODO: 추적 범위를 조정하세요 (현재: 300픽셀)
-        # ============================================================
-        if distance >= 300:  # 추적 범위를 벗어남
+        # 전체 거리 계산
+        distance = math.sqrt(dx * dx + dy * dy)
+
+        # 추적 범위를 벗어남
+        if distance >= DETECTION_RANGE:
             self.gnome.state_machine.cur_state = self.gnome.IDLE
             self.gnome.IDLE.enter(('LOSE_CHARACTER', 0))
             return
 
-        # 캐릭터를 향해 이동
-        target_x, target_y = self.gnome.get_character_position()
-        dx = target_x - self.gnome.x
-        dy = target_y - self.gnome.y
+        # X축 거리와 Y축 거리 체크
+        x_distance = abs(dx)
+        y_distance = abs(dy)
 
-        # 방향 정규화
-        distance = math.sqrt(dx * dx + dy * dy)
+        # 공격 범위 도달 체크: X축이 공격 범위 내 + Y축이 허용 오차 내
+        if x_distance < ATTACK_DETECTION_RANGE and y_distance <= ATTACK_Y_TOLERANCE:
+            # 공격 조건 만족: 공격!
+            self.gnome.state_machine.cur_state = self.gnome.ATTACK
+            self.gnome.ATTACK.enter(('REACH_CHARACTER', 0))
+            print(f"[DEBUG] Gnome 공격 시작! X거리: {x_distance:.1f}, Y거리: {y_distance:.1f}")
+            return
+
+        # 아직 공격 조건 불만족: 캐릭터를 향해 이동
         if distance > 0:
+            # 방향 정규화
             dx /= distance
             dy /= distance
 
