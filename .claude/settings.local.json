@@ -7,7 +7,10 @@
       "Bash(pip install:*)",
       "Bash(dir:*)",
       "Bash(git mv:*)",
-      "Bash(del generate_island_map.py generate_island_map_v2.py generate_island_map_final.py)"
+      "Bash(del generate_island_map.py generate_island_map_v2.py generate_island_map_final.py)",
+      "Bash(nul)",
+      "Bash(findstr:*)",
+      "Bash(NUL)"
     ],
     "deny": [],
     "ask": []
