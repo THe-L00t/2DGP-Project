@@ -47,15 +47,15 @@ def enter():
 
     # 타일맵 생성 (쿼터뷰 맵)
     print("=== 타일맵 로딩 중... ===")
-    map_data = load_map('stairs')
-    tilemap = TileMap(30, 20)
+    map_data = load_map('main')
+    tilemap = TileMap(40, 40)
     tilemap.load_from_array(map_data)
     tilemap.debug_mode = False  # 기본 OFF (F3으로 토글)
     print("타일맵 로딩 완료!")
 
     # 캐릭터 생성 (맵 중앙에 배치)
-    spawn_x = 15 * 64  # 15번째 타일 (중앙)
-    spawn_y = 10 * 64  # 10번째 타일
+    spawn_x = 20 * 64  # 20번째 타일 (중앙)
+    spawn_y = 20 * 64  # 20번째 타일
 
     warrior = Warrior()
     warrior.x = spawn_x
