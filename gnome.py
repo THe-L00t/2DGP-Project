@@ -196,7 +196,6 @@ class GnomeRun:
         pass
 
     def do(self, delta_time):
-        # TODO: 애니메이션 프레임 수를 실제 이미지에 맞게 수정하세요
         self.gnome.frame = (self.gnome.frame + self.animation_speed * delta_time) % 6
 
         # 캐릭터 감지 및 상태 전환
@@ -242,7 +241,7 @@ class GnomeRun:
         else:
             screen_x, screen_y = self.gnome.x, self.gnome.y
 
-        # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
+
         if self.gnome.face_dir == 1:
             self.gnome.imageR.clip_draw(int(self.gnome.frame) * 192, 0, 192, 192, screen_x, screen_y)
         else:

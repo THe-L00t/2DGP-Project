@@ -109,7 +109,7 @@ def handle_events(event):
         elif event.key == SDLK_0:
             show_collision_box = not show_collision_box
             print(f"충돌 박스 표시: {'ON' if show_collision_box else 'OFF'}")
-        elif event.key == SDLK_F3:
+        elif event.key == SDLK_9:
             # F3키: 타일맵 디버그 모드 토글
             if tilemap:
                 tilemap.toggle_debug_mode()
