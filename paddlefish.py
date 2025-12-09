@@ -129,10 +129,16 @@ class PaddlefishIdle:
         else:
             screen_x, screen_y = self.paddlefish.x, self.paddlefish.y
 
+        # 피격 효과 적용
+        self.paddlefish.apply_hit_effect(self.paddlefish.imageI)
+
         if self.paddlefish.face_dir == 1:
             self.paddlefish.imageI.clip_draw(int(self.paddlefish.frame) * PIXEL_WIDTH, 0, PIXEL_WIDTH, PIXEL_HEIGHT, screen_x, screen_y)
         else:
             self.paddlefish.imageI.clip_composite_draw(int(self.paddlefish.frame) * PIXEL_WIDTH, 0, PIXEL_WIDTH, PIXEL_HEIGHT, 0, 'h', screen_x, screen_y, PIXEL_WIDTH, PIXEL_HEIGHT)
+
+        # 투명도 원상복구
+        self.paddlefish.imageI.opacify(1.0)
 
 #----------------------------------------------------------------
 class PaddlefishAttack:
@@ -180,10 +186,16 @@ class PaddlefishAttack:
         else:
             screen_x, screen_y = self.paddlefish.x, self.paddlefish.y
 
+        # 피격 효과 적용
+        self.paddlefish.apply_hit_effect(self.paddlefish.imageA)
+
         if self.paddlefish.face_dir == 1:
             self.paddlefish.imageA.clip_draw(int(self.paddlefish.frame) * PIXEL_WIDTH, 0, PIXEL_WIDTH, PIXEL_HEIGHT, screen_x, screen_y)
         else:
             self.paddlefish.imageA.clip_composite_draw(int(self.paddlefish.frame) * PIXEL_WIDTH, 0, PIXEL_WIDTH, PIXEL_HEIGHT, 0, 'h', screen_x, screen_y, PIXEL_WIDTH, PIXEL_HEIGHT)
+
+        # 투명도 원상복구
+        self.paddlefish.imageA.opacify(1.0)
 
 #----------------------------------------------------------------
 class PaddlefishRun:
@@ -254,10 +266,16 @@ class PaddlefishRun:
         else:
             screen_x, screen_y = self.paddlefish.x, self.paddlefish.y
 
+        # 피격 효과 적용
+        self.paddlefish.apply_hit_effect(self.paddlefish.imageR)
+
         if self.paddlefish.face_dir == 1:
             self.paddlefish.imageR.clip_draw(int(self.paddlefish.frame) * PIXEL_WIDTH, 0, PIXEL_WIDTH, PIXEL_HEIGHT, screen_x, screen_y)
         else:
             self.paddlefish.imageR.clip_composite_draw(int(self.paddlefish.frame) * PIXEL_WIDTH, 0, PIXEL_WIDTH, PIXEL_HEIGHT, 0, 'h', screen_x, screen_y, PIXEL_WIDTH, PIXEL_HEIGHT)
+
+        # 투명도 원상복구
+        self.paddlefish.imageR.opacify(1.0)
 
 #----------------------------------------------------------------
 class PaddlefishChase:
@@ -341,10 +359,16 @@ class PaddlefishChase:
         else:
             screen_x, screen_y = self.paddlefish.x, self.paddlefish.y
 
+        # 피격 효과 적용
+        self.paddlefish.apply_hit_effect(self.paddlefish.imageR)
+
         if self.paddlefish.face_dir == 1:
             self.paddlefish.imageR.clip_draw(int(self.paddlefish.frame) * PIXEL_WIDTH, 0, PIXEL_WIDTH, PIXEL_HEIGHT, screen_x, screen_y)
         else:
             self.paddlefish.imageR.clip_composite_draw(int(self.paddlefish.frame) * PIXEL_WIDTH, 0, PIXEL_WIDTH, PIXEL_HEIGHT, 0, 'h', screen_x, screen_y, PIXEL_WIDTH, PIXEL_HEIGHT)
+
+        # 투명도 원상복구
+        self.paddlefish.imageR.opacify(1.0)
 
 #----------------------------------------------------------------
 class Paddlefish:
@@ -373,6 +397,9 @@ class Paddlefish:
 
         # 공격 쿨다운
         self.attack_cooldown = 0  # 0이면 공격 가능
+
+        # 피격 이펙트
+        self.hit_effect_time = 0.0  # 피격 효과 남은 시간
 
         # 이미지 로드
         self.imageI = load_image('resource/PaddleFish_Idle.png')
@@ -423,6 +450,10 @@ class Paddlefish:
 
     def update(self, delta_time):
         self.state_machine.update(delta_time)
+
+        # 피격 이펙트 시간 감소
+        if self.hit_effect_time > 0:
+            self.hit_effect_time -= delta_time
 
     def draw(self, camera=None):
         self.state_machine.draw(camera)
@@ -488,6 +519,9 @@ class Paddlefish:
             self.hp = 0
         print(f"Paddlefish가 {damage} 데미지를 받음! (남은 HP: {self.hp}/{self.max_hp})")
 
+        # 피격 이펙트 활성화 (0.5초)
+        self.hit_effect_time = 0.5
+
         # 피격 시 추적 모드 활성화
         if not self.is_chasing:
             self.is_chasing = True
@@ -511,5 +545,16 @@ class Paddlefish:
         if self.hp <= 0:
             print("Paddlefish 사망!")
             self.is_alive = False
+
+    def apply_hit_effect(self, image):
+        """피격 이펙트를 이미지에 적용하는 헬퍼 함수"""
+        if self.hit_effect_time > 0:
+            # 0.1초 간격으로 깜빡임 (5번)
+            blink_interval = 0.1
+            cycle_position = self.hit_effect_time % blink_interval
+            # 절반은 투명, 절반은 불투명
+            if cycle_position > blink_interval / 2:
+                image.opacify(0.5)
+            # else: 기본 투명도 유지 (1.0)
 
 #----------------------------------------------------------------

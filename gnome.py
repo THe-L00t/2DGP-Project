@@ -101,11 +101,17 @@ class GnomeIdle:
         else:
             screen_x, screen_y = self.gnome.x, self.gnome.y
 
+        # 피격 효과 적용
+        self.gnome.apply_hit_effect(self.gnome.imageI)
+
         # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
         if self.gnome.face_dir == 1:
             self.gnome.imageI.clip_draw(int(self.gnome.frame) * 192, 0, 192, 192, screen_x, screen_y)
         else:
             self.gnome.imageI.clip_composite_draw(int(self.gnome.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+
+        # 투명도 원상복구
+        self.gnome.imageI.opacify(1.0)
 
 #----------------------------------------------------------------
 class GnomeAttack:
@@ -153,11 +159,17 @@ class GnomeAttack:
         else:
             screen_x, screen_y = self.gnome.x, self.gnome.y
 
+        # 피격 효과 적용
+        self.gnome.apply_hit_effect(self.gnome.imageA)
+
         # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
         if self.gnome.face_dir == 1:
             self.gnome.imageA.clip_draw(int(self.gnome.frame) * 192, 0, 192, 192, screen_x, screen_y)
         else:
             self.gnome.imageA.clip_composite_draw(int(self.gnome.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+
+        # 투명도 원상복구
+        self.gnome.imageA.opacify(1.0)
 
 #----------------------------------------------------------------
 class GnomeRun:
@@ -241,11 +253,16 @@ class GnomeRun:
         else:
             screen_x, screen_y = self.gnome.x, self.gnome.y
 
+        # 피격 효과 적용
+        self.gnome.apply_hit_effect(self.gnome.imageR)
 
         if self.gnome.face_dir == 1:
             self.gnome.imageR.clip_draw(int(self.gnome.frame) * 192, 0, 192, 192, screen_x, screen_y)
         else:
             self.gnome.imageR.clip_composite_draw(int(self.gnome.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+
+        # 투명도 원상복구
+        self.gnome.imageR.opacify(1.0)
 
 #----------------------------------------------------------------
 class GnomeChase:
@@ -328,11 +345,17 @@ class GnomeChase:
         else:
             screen_x, screen_y = self.gnome.x, self.gnome.y
 
+        # 피격 효과 적용
+        self.gnome.apply_hit_effect(self.gnome.imageR)
+
         # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
         if self.gnome.face_dir == 1:
             self.gnome.imageR.clip_draw(int(self.gnome.frame) * 192, 0, 192, 192, screen_x, screen_y)
         else:
             self.gnome.imageR.clip_composite_draw(int(self.gnome.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+
+        # 투명도 원상복구
+        self.gnome.imageR.opacify(1.0)
 
 #----------------------------------------------------------------
 class Gnome:
@@ -357,6 +380,9 @@ class Gnome:
 
         # 생존 상태
         self.is_alive = True
+
+        # 피격 이펙트
+        self.hit_effect_time = 0.0  # 피격 효과 남은 시간
 
         # TODO: 이미지 파일 경로를 실제 파일로 변경하세요
         self.imageI = load_image('resource/Gnome_Idle.png')    # 대기 애니메이션
@@ -407,6 +433,10 @@ class Gnome:
 
     def update(self, delta_time):
         self.state_machine.update(delta_time)
+
+        # 피격 이펙트 시간 감소
+        if self.hit_effect_time > 0:
+            self.hit_effect_time -= delta_time
 
     def draw(self, camera=None):
         self.state_machine.draw(camera)
@@ -474,6 +504,9 @@ class Gnome:
             self.hp = 0
         print(f"Gnome이 {damage} 데미지를 받음! (남은 HP: {self.hp}/{self.max_hp})")
 
+        # 피격 이펙트 활성화 (0.5초)
+        self.hit_effect_time = 0.5
+
         # 넉백 효과 (공격자 위치 기반)
         if attacker_x is not None:
             knockback_distance = 20  # 밀려나는 거리
@@ -487,5 +520,16 @@ class Gnome:
         if self.hp <= 0:
             print("Gnome 사망!")
             self.is_alive = False
+
+    def apply_hit_effect(self, image):
+        """피격 이펙트를 이미지에 적용하는 헬퍼 함수"""
+        if self.hit_effect_time > 0:
+            # 0.1초 간격으로 깜빡임 (5번)
+            blink_interval = 0.1
+            cycle_position = self.hit_effect_time % blink_interval
+            # 절반은 투명, 절반은 불투명
+            if cycle_position > blink_interval / 2:
+                image.opacify(0.5)
+            # else: 기본 투명도 유지 (1.0)
 
 #----------------------------------------------------------------

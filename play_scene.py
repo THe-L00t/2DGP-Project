@@ -4,6 +4,7 @@
 from pico2d import *
 import game_framework
 import inventory_scene
+import random
 from warior import Warrior
 from child import Child
 from camera import Camera
@@ -20,12 +21,53 @@ warrior = None
 child = None
 camera = None
 tilemap = None
-gnome = None
-paddlefish = None
-panda = None
 cur_character = 'warrior'
 show_collision_box = False
 quest_manager = None
+
+# UI 이미지
+warrior_ui = None
+warrior_bar = None
+child_ui = None
+child_bar = None
+
+def spawn_monster_group(monster_class, center_x, center_y, count, radius=200):
+    """
+    특정 위치 주변에 몬스터 무리를 랜덤하게 생성
+
+    Args:
+        monster_class: 몬스터 클래스 (Gnome, Paddlefish, Panda)
+        center_x: 중심 X 좌표
+        center_y: 중심 Y 좌표
+        count: 생성할 몬스터 수
+        radius: 중심으로부터의 최대 거리 (기본 200px)
+
+    Returns:
+        list: 생성된 몬스터 객체 리스트
+    """
+    monsters = []
+    for i in range(count):
+        # 랜덤 오프셋 계산 (원형 분포)
+        angle = random.uniform(0, 2 * 3.14159)  # 0 ~ 2π
+        distance = random.uniform(0, radius)
+
+        offset_x = distance * random.uniform(-1, 1)  # 더 자연스러운 분포
+        offset_y = distance * random.uniform(-1, 1)
+
+        # 몬스터 생성
+        monster = monster_class(
+            x=center_x + offset_x,
+            y=center_y + offset_y
+        )
+
+        # 타겟 설정 (warrior를 기본 타겟으로)
+        if hasattr(monster, 'set_target_character'):
+            monster.set_target_character(warrior)
+
+        monsters.append(monster)
+        print(f"[SPAWN] {monster_class.__name__} 생성 위치: ({monster.x:.0f}, {monster.y:.0f})")
+
+    return monsters
 
 def collide(a, b):
     """두 객체의 바운딩 박스가 충돌하는지 확인"""
@@ -43,9 +85,16 @@ def collide(a, b):
 def enter():
     """Scene 진입 시 호출"""
     global world, warrior, child, camera, tilemap, gnome, paddlefish, panda, cur_character, show_collision_box, quest_manager
+    global warrior_ui, warrior_bar, child_ui, child_bar
 
     cur_character = 'warrior'
     show_collision_box = False
+
+    # UI 이미지 로드
+    warrior_ui = load_image('resource/warriorUI.png')
+    warrior_bar = load_image('resource/warriorBar.png')
+    child_ui = load_image('resource/childUI.png')
+    child_bar = load_image('resource/childBar.png')
 
     # 타일맵 생성 (쿼터뷰 맵)
     print("=== 타일맵 로딩 중... ===")
@@ -71,22 +120,34 @@ def enter():
     camera = Camera()
     camera.set_target(warrior)
 
-    # 몬스터 생성 (맵 곳곳에 배치)
-    gnome = Gnome(x=spawn_x + 300, y=spawn_y + 100)
-    gnome.set_target_character(warrior)
+    # ========================================
+    # 몬스터 무리 생성 (랜덤 위치)
+    # ========================================
+    # spawn_monster_group(몬스터클래스, 중심X, 중심Y, 수량, 반경)
+    # 반경: 몬스터들이 중심으로부터 퍼질 범위 (기본 200px)
 
-    paddlefish = Paddlefish(x=spawn_x - 200, y=spawn_y - 150)
-    paddlefish.set_target_character(warrior)
+    print("=== 몬스터 생성 중... ===")
 
-    panda = Panda(x=spawn_x + 150, y=spawn_y + 200)
+    # Gnome 무리 (맵 북동쪽 - 12마리)
+    gnome_list = spawn_monster_group(Gnome, spawn_x + 400, spawn_y + 300, 12, radius=250)
+
+    # Paddlefish 무리 (맵 남서쪽 - 15마리)
+    paddlefish_list = spawn_monster_group(Paddlefish, spawn_x - 400, spawn_y - 300, 15, radius=300)
+
+    # Panda 무리 (맵 북서쪽 - 3마리, 보스 느낌)
+    panda_list = spawn_monster_group(Panda, spawn_x - 300, spawn_y + 400, 3, radius=150)
+
+    print(f"생성 완료: Gnome {len(gnome_list)}마리, Paddlefish {len(paddlefish_list)}마리, Panda {len(panda_list)}마리")
 
     # 월드에 추가
     world = []
     world.append(child)
     world.append(warrior)
-    world.append(gnome)
-    world.append(paddlefish)
-    world.append(panda)
+
+    # 생성된 모든 몬스터를 월드에 추가
+    world.extend(gnome_list)
+    world.extend(paddlefish_list)
+    world.extend(panda_list)
 
     # ========================================
     # 퀘스트 매니저 생성 및 초기 퀘스트 추가
@@ -163,7 +224,7 @@ def enter():
 
 def exit():
     """Scene 종료 시 호출"""
-    global world, warrior, child, camera, tilemap, gnome, paddlefish, panda
+    global world, warrior, child, camera, tilemap
     # 리소스 해제는 pico2d가 자동으로 처리
 
 def pause():
@@ -200,18 +261,20 @@ def handle_events(event):
                 warrior.IDLE.enter(('STOP', 0))
                 cur_character = 'child'
                 camera.set_target(child)
-                # 몬스터들의 추적 대상 변경
-                gnome.set_target_character(child)
-                paddlefish.set_target_character(child)
+                # 모든 몬스터들의 추적 대상 변경
+                for obj in world:
+                    if hasattr(obj, 'set_target_character'):
+                        obj.set_target_character(child)
             else:
                 child.keys = {'left': False, 'right': False, 'up': False, 'down': False}
                 child.state_machine.cur_state = child.IDLE
                 child.IDLE.enter(('STOP', 0))
                 cur_character = 'warrior'
                 camera.set_target(warrior)
-                # 몬스터들의 추적 대상 변경
-                gnome.set_target_character(warrior)
-                paddlefish.set_target_character(warrior)
+                # 모든 몬스터들의 추적 대상 변경
+                for obj in world:
+                    if hasattr(obj, 'set_target_character'):
+                        obj.set_target_character(warrior)
         else:
             # 현재 캐릭터에게 이벤트 전달
             if cur_character == 'warrior':

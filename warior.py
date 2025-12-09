@@ -59,10 +59,16 @@ class WIdle:
         else:
             screen_x, screen_y = self.warrior.x, self.warrior.y
 
+        # 피격 효과 적용
+        self.warrior.apply_hit_effect(self.warrior.imageI)
+
         if self.warrior.face_dir == 1:
             self.warrior.imageI.clip_draw(int(self.warrior.frame) * 192,0,192,192,screen_x,screen_y)
         else:
             self.warrior.imageI.clip_composite_draw(int(self.warrior.frame) * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
+
+        # 투명도 원상복구
+        self.warrior.imageI.opacify(1.0)
 #----------------------------------------------------------------
 class WRun:
     def __init__(self, warrior):
@@ -136,10 +142,16 @@ class WRun:
         else:
             screen_x, screen_y = self.warrior.x, self.warrior.y
 
+        # 피격 효과 적용
+        self.warrior.apply_hit_effect(self.warrior.imageR)
+
         if self.warrior.face_dir == 1:
             self.warrior.imageR.clip_draw(int(self.warrior.frame) * 192,0,192,192,screen_x,screen_y)
         else:
             self.warrior.imageR.clip_composite_draw(int(self.warrior.frame) * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
+
+        # 투명도 원상복구
+        self.warrior.imageR.opacify(1.0)
 
 #----------------------------------------------------------------
 class WAttack1:
@@ -216,10 +228,17 @@ class WAttack1:
         else:
             screen_x, screen_y = self.warrior.x, self.warrior.y
 
+        # 피격 효과 적용
+        self.warrior.apply_hit_effect(self.warrior.imageA1)
+
         if self.warrior.face_dir == 1:
             self.warrior.imageA1.clip_draw(int(self.warrior.frame) * 192,0,192,192,screen_x,screen_y)
         else:
             self.warrior.imageA1.clip_composite_draw(int(self.warrior.frame) * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
+
+        # 투명도 원상복구
+        self.warrior.imageA1.opacify(1.0)
+
 #----------------------------------------------------------------
 class WAttack2:
     def __init__(self, warrior):
@@ -290,10 +309,16 @@ class WAttack2:
         else:
             screen_x, screen_y = self.warrior.x, self.warrior.y
 
+        # 피격 효과 적용
+        self.warrior.apply_hit_effect(self.warrior.imageA2)
+
         if self.warrior.face_dir == 1:
             self.warrior.imageA2.clip_draw(int(self.warrior.frame) * 192,0,192,192,screen_x,screen_y)
         else:
             self.warrior.imageA2.clip_composite_draw(int(self.warrior.frame) * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
+
+        # 투명도 원상복구
+        self.warrior.imageA2.opacify(1.0)
 
 #----------------------------------------------------------------
 class Warrior:
@@ -318,6 +343,9 @@ class Warrior:
         # 생존 상태
         self.is_alive = True
 
+        # 피격 이펙트
+        self.hit_effect_time = 0.0  # 피격 효과 남은 시간
+
         self.imageI = load_image('resource/Warrior_Idle.png')
         self.imageR = load_image('resource/Warrior_Run.png')
         self.imageA1 = load_image('resource/Warrior_Attack1.png')
@@ -341,7 +369,10 @@ class Warrior:
 
     def update(self, delta_time):
         self.state_machine.update(delta_time)
-        pass
+
+        # 피격 이펙트 시간 감소
+        if self.hit_effect_time > 0:
+            self.hit_effect_time -= delta_time
 
     def draw(self, camera=None):
         self.state_machine.draw(camera)
@@ -399,6 +430,9 @@ class Warrior:
             self.hp = 0
         print(f"Warrior가 {damage} 데미지를 받음! (남은 HP: {self.hp}/{self.max_hp})")
 
+        # 피격 이펙트 활성화 (0.5초)
+        self.hit_effect_time = 0.5
+
         # 넉백 효과 (공격자 위치 기반)
         if attacker_x is not None:
             knockback_distance = 20  # 밀려나는 거리
@@ -412,4 +446,15 @@ class Warrior:
         if self.hp <= 0:
             print("Warrior 사망!")
             self.is_alive = False
+
+    def apply_hit_effect(self, image):
+        """피격 이펙트를 이미지에 적용하는 헬퍼 함수"""
+        if self.hit_effect_time > 0:
+            # 0.1초 간격으로 깜빡임 (5번)
+            blink_interval = 0.1
+            cycle_position = self.hit_effect_time % blink_interval
+            # 절반은 투명, 절반은 불투명
+            if cycle_position > blink_interval / 2:
+                image.opacify(0.5)
+            # else: 기본 투명도 유지 (1.0)
 #----------------------------------------------------------------
