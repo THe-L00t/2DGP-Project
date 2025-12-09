@@ -115,6 +115,7 @@ def enter():
     child = Child()
     child.x = spawn_x + 100
     child.y = spawn_y
+    child.warrior = warrior  # Warrior 참조 설정
 
     # 카메라 생성
     camera = Camera()
@@ -384,7 +385,7 @@ def remove_dead_objects():
 
 def update(delta_time):
     """업데이트"""
-    global camera, tilemap
+    global camera, tilemap, cur_character
 
     # 타일맵 업데이트
     if tilemap:
@@ -421,6 +422,21 @@ def update(delta_time):
     # 사망한 객체 제거
     remove_dead_objects()
 
+    # Child Power가 0 이하가 되면 강제로 Warrior로 전환
+    if cur_character == 'child' and child.hp <= 0:
+        print("[AUTO SWITCH] Child Power 소진! Warrior로 강제 전환")
+        # Child 키 입력 초기화
+        child.keys = {'left': False, 'right': False, 'up': False, 'down': False}
+        child.state_machine.cur_state = child.IDLE
+        child.IDLE.enter(('STOP', 0))
+        # Warrior로 전환
+        cur_character = 'warrior'
+        camera.set_target(warrior)
+        # 모든 몬스터들의 추적 대상 변경
+        for obj in world:
+            if hasattr(obj, 'set_target_character'):
+                obj.set_target_character(warrior)
+
     # 카메라 타겟 설정
     if cur_character == 'warrior':
         camera.set_target(warrior)
@@ -428,6 +444,54 @@ def update(delta_time):
         camera.set_target(child)
 
     camera.update(delta_time)
+
+def draw_ui():
+    """HP/Power UI 그리기 (좌측 하단)"""
+    # Warrior HP UI (좌측 하단)
+    ui_x = 120  # UI 중심 X 좌표
+    ui_y = 90   # UI 중심 Y 좌표
+
+    # Bar 크기 (실제 이미지 크기에 맞게 조정 필요)
+    bar_width = 200   # Bar 이미지의 전체 너비
+    bar_height = 30   # Bar 이미지의 높이
+
+    # Warrior HP Bar (뒤에 그리기)
+    if warrior and warrior_bar:
+        hp_ratio = warrior.hp / warrior.max_hp
+        bar_draw_width = int(bar_width * hp_ratio)  # 체력 비율에 따른 너비
+
+        # clip_draw(sx, sy, w, h, x, y, w, h)
+        # Bar를 왼쪽부터 체력 비율만큼만 그리기
+        if bar_draw_width > 0:
+            warrior_bar.clip_draw(
+                0, 0, bar_draw_width, bar_height,  # 소스 영역
+                ui_x - (bar_width - bar_draw_width) // 2, ui_y,  # 중심 좌표 조정
+                bar_draw_width, bar_height  # 그릴 크기
+            )
+
+    # Warrior UI (앞에 그리기)
+    if warrior_ui:
+        warrior_ui.draw(ui_x, ui_y, 240, 70)
+
+    # Child Power UI (Warrior UI 아래)
+    child_ui_y = ui_y - 60  # Warrior UI 아래 70px
+
+    # Child Power Bar (뒤에 그리기)
+    if child and child_bar:
+        # Child는 Power를 표시 (hp 사용)
+        power_ratio = child.hp / child.max_hp
+        bar_draw_width = int(bar_width * power_ratio)
+
+        if bar_draw_width > 0:
+            child_bar.clip_draw(
+                0, 0, bar_draw_width, bar_height,
+                ui_x - (bar_width - bar_draw_width) // 2, child_ui_y,
+                bar_draw_width, bar_height
+            )
+
+    # Child UI (앞에 그리기)
+    if child_ui:
+        child_ui.draw(ui_x, child_ui_y, 240, 70)
 
 def draw():
     """렌더링"""
@@ -463,3 +527,8 @@ def draw():
                 # 공격 박스는 2중 사각형으로 표시
                 draw_rectangle(screen_left, screen_bottom, screen_right, screen_top)
                 draw_rectangle(screen_left+1, screen_bottom+1, screen_right-1, screen_top-1)
+
+    # UI 그리기 (좌측 하단)
+    draw_ui()
+
+    update_canvas()

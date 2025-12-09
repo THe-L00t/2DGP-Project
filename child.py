@@ -112,6 +112,71 @@ class CRun:
         else:
             self.child.imageR.clip_composite_draw(int(self.child.frame) * 192,0,192,192,0,'h',screen_x,screen_y,192,192)
 #----------------------------------------------------------------
+class CInteraction:
+    """Child의 Interaction 상태 - Warrior 힐"""
+    def __init__(self, child):
+        self.child = child
+        self.animation_speed = 11  # 11프레임을 1초에 재생
+        self.interaction_time = 0
+        self.max_interaction_time = 1.0  # 1초 동안 재생
+        self.has_healed = False  # 힐을 한 번만 적용하기 위한 플래그
+
+    def enter(self, e):
+        self.child.frame = 0
+        self.interaction_time = 0
+        self.has_healed = False
+        self.child.dirx = 0
+        self.child.diry = 0
+        print(f"[DEBUG] Child Interaction 시작!")
+
+    def exit(self, e):
+        pass
+
+    def do(self, delta_time):
+        # 애니메이션 프레임 업데이트
+        self.child.frame = (self.child.frame + self.animation_speed * delta_time)
+
+        # 애니메이션이 끝까지 재생되도록 보장
+        if self.child.frame >= 11:
+            self.child.frame = 10.99  # 마지막 프레임에 고정
+
+        # 애니메이션 중간(약 절반)에 힐 적용
+        if self.child.frame >= 5.5 and not self.has_healed:
+            self.has_healed = True
+            # Child power 40% 소모
+            power_cost = self.child.max_hp * 0.4
+            self.child.hp -= power_cost
+            if self.child.hp < 0:
+                self.child.hp = 0
+            print(f"[INTERACTION] Child Power 40% 소모! (남은 Power: {self.child.hp}/{self.child.max_hp})")
+
+            # Warrior HP 20% 회복
+            if self.child.warrior:
+                heal_amount = self.child.warrior.max_hp * 0.2
+                self.child.warrior.hp += heal_amount
+                if self.child.warrior.hp > self.child.warrior.max_hp:
+                    self.child.warrior.hp = self.child.warrior.max_hp
+                print(f"[INTERACTION] Warrior HP 20% 회복! ({heal_amount:.1f} HP 회복, 현재 HP: {self.child.warrior.hp}/{self.child.warrior.max_hp})")
+
+        # 시간 증가
+        self.interaction_time += delta_time
+        if self.interaction_time >= self.max_interaction_time:
+            # 애니메이션 종료, IDLE로 전환
+            print(f"[DEBUG] Child Interaction 종료")
+            self.child.state_machine.cur_state = self.child.IDLE
+            self.child.IDLE.enter(('AUTO_TRANSITION', 0))
+
+    def draw(self, camera=None):
+        if camera:
+            screen_x, screen_y = camera.apply(self.child.x, self.child.y)
+        else:
+            screen_x, screen_y = self.child.x, self.child.y
+
+        if self.child.face_dir == 1:
+            self.child.imageInteraction.clip_draw(int(self.child.frame) * 192, 0, 192, 192, screen_x, screen_y)
+        else:
+            self.child.imageInteraction.clip_composite_draw(int(self.child.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+#----------------------------------------------------------------
 class Child:
     def __init__(self):
         self.x, self.y = 500, 300
@@ -128,17 +193,25 @@ class Child:
         # 생존 상태
         self.is_alive = True
 
+        # Warrior 참조 (play_scene에서 설정)
+        self.warrior = None
+
         self.imageI = load_image('resource/Child_Idle.png')
         self.imageR = load_image('resource/Child_Run.png')
+        self.imageInteraction = load_image('resource/Child_Interaction.png')
 
         self.IDLE = CIdle(self)
         self.RUN = CRun(self)
+        self.INTERACTION = CInteraction(self)
         self.state_machine = StateMachine(
             self.IDLE,
             {
-                self.IDLE: {right_down: self.RUN, left_down: self.RUN, up_down: self.RUN, down_down: self.RUN},
+                self.IDLE: {right_down: self.RUN, left_down: self.RUN, up_down: self.RUN, down_down: self.RUN,
+                            a_down: self.INTERACTION},
                 self.RUN: {right_up: self.RUN, left_up: self.RUN, right_down: self.RUN, left_down: self.RUN,
-                           up_up: self.RUN, down_up: self.RUN, up_down: self.RUN, down_down: self.RUN}
+                           up_up: self.RUN, down_up: self.RUN, up_down: self.RUN, down_down: self.RUN,
+                           a_down: self.INTERACTION},
+                self.INTERACTION: {}
             })
     def update(self, delta_time):
         self.state_machine.update(delta_time)
