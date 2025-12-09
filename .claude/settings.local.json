@@ -10,7 +10,8 @@
       "Bash(del generate_island_map.py generate_island_map_v2.py generate_island_map_final.py)",
       "Bash(nul)",
       "Bash(findstr:*)",
-      "Bash(NUL)"
+      "Bash(NUL)",
+      "Bash(copy \"C:\\Windows\\Fonts\\malgun.ttf\" \"C:\\Users\\sigun\\University\\2-2\\2DGameProgramming\\2DGP-Project\\resource\\malgun.ttf\")"
     ],
     "deny": [],
     "ask": []

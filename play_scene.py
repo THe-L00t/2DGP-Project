@@ -12,6 +12,7 @@ from map_data import load_map
 from gnome import Gnome
 from paddlefish import Paddlefish
 from panda import Panda
+from quest_manager import QuestManager, Quest
 
 # Scene 변수
 world = []
@@ -24,6 +25,7 @@ paddlefish = None
 panda = None
 cur_character = 'warrior'
 show_collision_box = False
+quest_manager = None
 
 def collide(a, b):
     """두 객체의 바운딩 박스가 충돌하는지 확인"""
@@ -40,7 +42,7 @@ def collide(a, b):
 
 def enter():
     """Scene 진입 시 호출"""
-    global world, warrior, child, camera, tilemap, gnome, paddlefish, panda, cur_character, show_collision_box
+    global world, warrior, child, camera, tilemap, gnome, paddlefish, panda, cur_character, show_collision_box, quest_manager
 
     cur_character = 'warrior'
     show_collision_box = False
@@ -86,6 +88,79 @@ def enter():
     world.append(paddlefish)
     world.append(panda)
 
+    # ========================================
+    # 퀘스트 매니저 생성 및 초기 퀘스트 추가
+    # ========================================
+    # 주의: 퀘스트는 순서대로 진행됩니다!
+    #       첫 번째 퀘스트부터 시작하여, 완료해야 다음 퀘스트가 활성화됩니다.
+    #
+    # 퀘스트 추가 방법:
+    #   quest_manager.add_quest(Quest(
+    #       quest_id="고유ID",           # 퀘스트 고유 식별자 (중복되면 안됨)
+    #       title="퀘스트 제목",          # UI에 표시될 제목
+    #       description="퀘스트 설명",    # 퀘스트 상세 설명
+    #       target_monster="몬스터이름",  # "Gnome", "Paddlefish", "Panda" 중 하나
+    #       target_count=처치수           # 처치해야 할 몬스터 수
+    #   ))
+    #
+    # ========================================
+
+    quest_manager = QuestManager()
+
+    # 퀘스트 1: 놈 사냥 (첫 번째 퀘스트 - 자동으로 활성화됨)
+    quest_manager.add_quest(Quest(
+        quest_id="kill_gnome_10",
+        title="노움 처치",
+        description="노움을 잡아 판다의 단서를 찾자",
+        target_monster="Gnome",
+        target_count=2
+    ))
+    # 퀘스트 1: 놈 사냥 (첫 번째 퀘스트 - 자동으로 활성화됨)
+    quest_manager.add_quest(Quest(
+        quest_id="kill_gnome_10",
+        title="노움 사냥",
+        description="정말 모든 노움이 판다를 모를까?",
+        target_monster="Gnome",
+        target_count=7
+    ))
+    # 퀘스트 2: 패들피쉬 소탕 (퀘스트 1 완료 후 활성화)
+    quest_manager.add_quest(Quest(
+        quest_id="kill_paddlefish_5",
+        title="패들피쉬 처치",
+        description="노움은 아무것도 모른다. 패들피쉬를 잡아 단서를 찾자",
+        target_monster="Paddlefish",
+        target_count=3
+    ))
+    # 퀘스트 3: 패들피쉬 소탕 (퀘스트 1 완료 후 활성화)
+    quest_manager.add_quest(Quest(
+        quest_id="kill_paddlefish_5",
+        title="패들피쉬 소탕",
+        description="패들피쉬는 무언가를 알고 있다. 소탕하자",
+        target_monster="Paddlefish",
+        target_count=10
+    ))
+    # 퀘스트 3: 판다 도전 (퀘스트 2 완료 후 활성화)
+    quest_manager.add_quest(Quest(
+        quest_id="kill_panda_3",
+        title="보스:판다 도전",
+        description="드디어 판다의 위치를 알아냈다. 판다를 처치하라!",
+        target_monster="Panda",
+        target_count=1
+    ))
+
+    # ========================================
+    # 여기에 새로운 퀘스트를 추가하세요!
+    # ========================================
+    # 예시:
+    # quest_manager.add_quest(Quest(
+    #     quest_id="kill_gnome_20",
+    #     title="놈 대량 사냥",
+    #     description="놈 20마리를 처치하세요",
+    #     target_monster="Gnome",
+    #     target_count=20
+    # ))
+    # ========================================
+
 def exit():
     """Scene 종료 시 호출"""
     global world, warrior, child, camera, tilemap, gnome, paddlefish, panda
@@ -114,7 +189,8 @@ def handle_events(event):
             if tilemap:
                 tilemap.toggle_debug_mode()
         elif event.key == SDLK_i:
-            # I 키를 누르면 인벤토리 열기
+            # I 키를 누르면 퀘스트 목록 열기
+            inventory_scene.quest_manager = quest_manager
             game_framework.push_scene(inventory_scene)
         elif event.key == SDLK_f:
             # F 키로 캐릭터 전환
@@ -229,12 +305,17 @@ def collide_bb(bb1, bb2):
 
 def remove_dead_objects():
     """체력이 0이 된 객체들을 제거"""
-    global world
+    global world, quest_manager
 
     # 사망한 객체들을 찾아서 제거
     dead_objects = [obj for obj in world if hasattr(obj, 'is_alive') and not obj.is_alive]
 
     for obj in dead_objects:
+        # 몬스터 처치 시 퀘스트 매니저에 알림
+        monster_name = obj.__class__.__name__
+        if quest_manager and monster_name in ['Gnome', 'Paddlefish', 'Panda']:
+            quest_manager.on_monster_killed(monster_name)
+
         world.remove(obj)
         print(f"{obj.__class__.__name__}이(가) 월드에서 제거되었습니다.")
 
