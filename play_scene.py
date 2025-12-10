@@ -31,6 +31,9 @@ warrior_bar = None
 child_ui = None
 child_bar = None
 
+# 배경음악
+bgm = None
+
 def spawn_monster_group(monster_class, center_x, center_y, count, radius=200):
     """
     특정 위치 주변에 몬스터 무리를 랜덤하게 생성
@@ -85,7 +88,7 @@ def collide(a, b):
 def enter():
     """Scene 진입 시 호출"""
     global world, warrior, child, camera, tilemap, gnome, paddlefish, panda, cur_character, show_collision_box, quest_manager
-    global warrior_ui, warrior_bar, child_ui, child_bar
+    global warrior_ui, warrior_bar, child_ui, child_bar, bgm
 
     cur_character = 'warrior'
     show_collision_box = False
@@ -95,6 +98,12 @@ def enter():
     warrior_bar = load_image('resource/warriorBar.png')
     child_ui = load_image('resource/childUI.png')
     child_bar = load_image('resource/childBar.png')
+
+    # 배경음악 로드 및 반복 재생
+    bgm = load_music('resource/background.mp3')
+    bgm.set_volume(32)  # 볼륨 설정 (0~128)
+    bgm.repeat_play()   # 무한 반복 재생
+    print("배경음악 재생 시작")
 
     # 타일맵 생성 (쿼터뷰 맵)
     print("=== 타일맵 로딩 중... ===")
@@ -346,6 +355,20 @@ def check_attack_collisions():
                 if target_id in attacker.hit_targets:
                     print(f"[DEBUG] {target.__class__.__name__}은(는) 이미 이번 공격에 맞음 (스킵)")
                     continue
+
+                # Panda가 가드 중이면 공격자를 넉백시킴 (데미지 없음)
+                if target_class == 'Panda' and hasattr(target, 'is_guarding') and target.is_guarding():
+                    print(f"[DEBUG] *** Panda 가드 성공! {attacker_class} 넉백!")
+                    # 공격자를 넉백시킴
+                    knockback_distance = 50  # 판다의 가드 넉백은 더 강함
+                    if attacker.x > target.x:  # 공격자가 오른쪽에 있으면 오른쪽으로 밀림
+                        attacker.x += knockback_distance
+                        print(f"[DEBUG] {attacker_class} 넉백: 오른쪽으로 {knockback_distance}px")
+                    else:  # 공격자가 왼쪽에 있으면 왼쪽으로 밀림
+                        attacker.x -= knockback_distance
+                        print(f"[DEBUG] {attacker_class} 넉백: 왼쪽으로 {knockback_distance}px")
+                    attacker.hit_targets.add(target_id)
+                    continue  # 데미지 처리 없이 넘어감
 
                 # 데미지 적용 (넉백을 위해 공격자의 x 좌표 전달)
                 print(f"[DEBUG] *** 충돌 감지! {attacker.__class__.__name__} -> {target.__class__.__name__}")

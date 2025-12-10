@@ -68,6 +68,25 @@ class Tile:
     # 계단 타일 타입 목록 (다층 구조)
     STAIR_TILES = [TileType.STAIR_UP_RIGHT, TileType.STAIR_UP_LEFT]
 
+    # 애니메이션 타일 타입 목록 (12프레임 스프라이트)
+    ANIMATED_TILES = [
+        TileType.WAVE_LEFT, TileType.WAVE_CENTER, TileType.WAVE_RIGHT,
+        TileType.CLIFF_LEFT, TileType.CLIFF_CENTER, TileType.CLIFF_RIGHT
+    ]
+
+    # 오션 위에 덧그려야 하는 타일 (파도 + 절벽 + 테두리 타일들)
+    OVERLAY_ON_OCEAN = [
+        TileType.TOP_LEFT, TileType.TOP, TileType.TOP_RIGHT,
+        TileType.LEFT, TileType.RIGHT,
+        TileType.WAVE_LEFT, TileType.WAVE_CENTER, TileType.WAVE_RIGHT,
+        TileType.CLIFF_LEFT, TileType.CLIFF_CENTER, TileType.CLIFF_RIGHT
+    ]
+
+    # CENTER 타일 위에 덧그려야 하는 타일 (계단 타일들)
+    OVERLAY_ON_CENTER = [
+        TileType.STAIR_UP_RIGHT, TileType.STAIR_UP_LEFT
+    ]
+
     # 타일 타입별 충돌 가능 여부
     COLLISION_MAP = {
         TileType.OCEAN: False,          # 충돌 없음
@@ -182,6 +201,10 @@ class Tile:
         self.x = grid_x * Tile.TILE_SIZE
         self.y = grid_y * Tile.TILE_SIZE
 
+        # 애니메이션 관련 변수
+        self.frame = 0.0  # 현재 프레임 (실수)
+        self.animation_speed = 8.0  # 초당 프레임 수
+
         # 해당 타입의 이미지 로드 (아직 로드되지 않았다면)
         if tile_type not in Tile.tile_images:
             Tile.load_tile_image(tile_type)
@@ -218,18 +241,35 @@ class Tile:
             self.y + Tile.TILE_SIZE
         )]
 
+    def update(self, delta_time):
+        """타일 업데이트 (애니메이션)"""
+        # 애니메이션 타일인 경우에만 프레임 업데이트
+        if self.tile_type in Tile.ANIMATED_TILES:
+            self.frame = (self.frame + self.animation_speed * delta_time) % 12
+
     def draw(self, camera):
         """타일 그리기 (하단 이미지만, 계단은 하단 부분만)"""
-        # 해당 타일의 이미지 가져오기
-        image = Tile.tile_images.get(self.tile_type)
-        if image is None:
-            return  # 이미지가 없으면 그리지 않음
-
         # 화면 좌표로 변환 (타일의 중심)
         screen_x, screen_y = camera.apply(
             self.x + Tile.TILE_SIZE // 2,
             self.y + Tile.TILE_SIZE // 2
         )
+
+        # 계단 타일(10, 11)인 경우 CENTER(5번) 먼저 그리기
+        if self.tile_type in Tile.OVERLAY_ON_CENTER:
+            center_image = Tile.tile_images.get(TileType.CENTER)
+            if center_image:
+                center_image.draw(screen_x, screen_y, Tile.TILE_SIZE, Tile.TILE_SIZE)
+        # 오션 위에 덧그려야 하는 타일인 경우 OCEAN(0번) 먼저 그리기
+        elif self.tile_type in Tile.OVERLAY_ON_OCEAN:
+            ocean_image = Tile.tile_images.get(TileType.OCEAN)
+            if ocean_image:
+                ocean_image.draw(screen_x, screen_y, Tile.TILE_SIZE, Tile.TILE_SIZE)
+
+        # 해당 타일의 이미지 가져오기
+        image = Tile.tile_images.get(self.tile_type)
+        if image is None:
+            return  # 이미지가 없으면 그리지 않음
 
         # 계단 타일 - 하단 이미지만 그리기
         if self.tile_type in Tile.STAIR_TILES:
@@ -237,6 +277,17 @@ class Tile:
                 # 하단 이미지 (1002/1102) - 타일 기준 위치에 그리기
                 bottom_image = image[1]
                 bottom_image.draw(screen_x, screen_y, Tile.TILE_SIZE, Tile.TILE_SIZE)
+        # 애니메이션 타일 (12~17번) - 12프레임 스프라이트
+        elif self.tile_type in Tile.ANIMATED_TILES:
+            current_frame = int(self.frame)
+            # clip_draw(sx, sy, w, h, x, y, w, h)
+            # 12프레임이 가로로 배열되어 있다고 가정
+            image.clip_draw(
+                current_frame * Tile.TILE_SIZE, 0,  # 소스 x, y
+                Tile.TILE_SIZE, Tile.TILE_SIZE,      # 소스 width, height
+                screen_x, screen_y,                   # 화면 x, y
+                Tile.TILE_SIZE, Tile.TILE_SIZE        # 화면 width, height
+            )
         else:
             # 일반 타일 이미지 그리기 (중심 기준)
             image.draw(screen_x, screen_y, Tile.TILE_SIZE, Tile.TILE_SIZE)
@@ -410,8 +461,12 @@ class TileMap:
         return colliding
 
     def update(self, delta_time):
-        """업데이트 (필요시 애니메이션 등)"""
-        pass
+        """업데이트 (애니메이션 타일 프레임 업데이트)"""
+        # 모든 타일 업데이트
+        for row in self.tiles:
+            for tile in row:
+                if tile:
+                    tile.update(delta_time)
 
     def draw(self, camera):
         """타일맵 전체 그리기"""

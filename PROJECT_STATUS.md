@@ -1,8 +1,8 @@
 # 2DGP Project - 현재 진행상황
 
-> 최종 업데이트: 2025-11-25
+> 최종 업데이트: 2025-12-10
 > 브랜치: main
-> 커밋: 5a5c7a9 (맵 세팅 준비 완료)
+> 커밋: b2b8087 (체력바 UI구현)
 
 ## 목차
 - [프로젝트 개요](#프로젝트-개요)
@@ -184,6 +184,8 @@ Lerp 보간: lerp_speed = 5.0
 - [x] 프레임 기반 공격 판정
 - [x] 넉백 효과
 - [x] HP/데미지 시스템
+- [x] 체력바 UI (전사/아이 각각의 UI)
+- [x] 한글 폰트 지원 (malgun.ttf)
 
 ### ✅ 적 AI
 - [x] 순찰 패턴 (Gnome, Paddlefish)
@@ -192,6 +194,7 @@ Lerp 보간: lerp_speed = 5.0
 - [x] 피격 반응 (Paddlefish)
 - [x] 원형 순찰 (Panda)
 - [x] 상태 전환 로직
+- [x] 몬스터 무리 생성 시스템
 
 ### ✅ 맵 시스템
 - [x] 타일맵 렌더링
@@ -204,6 +207,7 @@ Lerp 보간: lerp_speed = 5.0
 - [x] 타이틀 화면 (title_scene.py)
 - [x] 메인 게임 화면 (play_scene.py)
 - [x] 인벤토리 오버레이 (inventory_scene.py)
+- [x] 퀘스트 시스템 (quest_manager.py)
 - [x] 씬 전환 시스템 (game_framework.py)
 
 ### ✅ 디버그 기능
@@ -255,15 +259,17 @@ def get_bb(self):
 # 파일 누락: resource/title.png
 ```
 
-#### 4. 인벤토리 UI
-**파일**: `inventory_scene.py:320`
+#### 4. 인벤토리 및 퀘스트 UI
+**파일**: `inventory_scene.py`, `quest_manager.py`
 ```python
-# TODO: UI 텍스트 추가 (pico2d 폰트 필요)
-# 현재 상태: 빈 박스만 그려짐
+# 현재 상태:
+#   - 한글 폰트 추가됨 (malgun.ttf)
+#   - 퀘스트 매니저 시스템 구현됨 (111줄)
+#   - UI 이미지 추가됨 (quest.png)
 # 필요 작업:
-#   - 아이템 목록 표시
-#   - 텍스트 렌더링
-#   - 아이템 선택 기능
+#   - 아이템 시스템 완성
+#   - 퀘스트 로직 연동
+#   - 아이템 선택/사용 기능 완성
 ```
 
 ### 🟢 우선순위: 낮음
@@ -296,21 +302,22 @@ main.py (엔트리 포인트)
      └─ title_scene.py (타이틀 - 스페이스/엔터로 시작)
          └─ play_scene.py (메인 게임 - 322줄)
              ├─ Characters
-             │   ├─ warior.py (416줄) ✅
-             │   └─ child.py (188줄) ✅
+             │   ├─ warior.py (463줄) ✅ 체력바 추가
+             │   └─ child.py (265줄) ✅ 체력바 추가
              ├─ Monsters
-             │   ├─ gnome.py (492줄) ⚠️ 프레임 수정 필요
-             │   ├─ paddlefish.py (521줄) ✅
-             │   └─ panda.py (372줄) ⚠️ 프레임 수정 필요
+             │   ├─ gnome.py (536줄) ✅ 무리 생성 추가
+             │   ├─ paddlefish.py (566줄) ✅ 무리 생성 추가
+             │   └─ panda.py (417줄) ✅ 무리 생성 추가
              ├─ Map
              │   ├─ tile.py (445줄) ✅ 충돌 시스템 완성
              │   └─ map_data.py (98줄) ✅ 맵 데이터
              ├─ Systems
              │   ├─ camera.py ✅
              │   ├─ state_machine.py (25줄) ✅
-             │   └─ event_check.py ✅
+             │   ├─ event_check.py ✅
+             │   └─ quest_manager.py (111줄) ✅ 퀘스트 시스템
              └─ UI
-                 └─ inventory_scene.py (I키) ⚠️ UI 미완성
+                 └─ inventory_scene.py (110줄) ⚠️ 진행 중
 ```
 
 ### 보조 파일
@@ -328,6 +335,11 @@ resource/ - 캐릭터/타일 스프라이트 이미지
   ├─ paddlefish/ - 패들피쉬 애니메이션
   ├─ panda/ - 판다 애니메이션
   ├─ tiles/ - 타일셋
+  ├─ UI 리소스
+  │   ├─ warriorUI.png, warriorBar.png ✅ 전사 체력바
+  │   ├─ childUI.png, childBar.png ✅ 아이 체력바
+  │   └─ quest.png ✅ 퀘스트 UI
+  ├─ malgun.ttf ✅ 한글 폰트 (13.4MB)
   └─ title.png ❌ 누락
 
 maps/ - 맵 데이터
@@ -382,17 +394,26 @@ Gnome ATTACK: 총 6프레임, 판정 [3,4]
 ## 최근 커밋 히스토리
 
 ```
-5a5c7a9 맵 세팅 준비 완료
-d0af70e 맵 수정 및 충돌처리
-17f5296 다시 타일맵 부활
-1321800 맵 파일 제작중
-05587e4 gnome 패턴 일부 수정
+b2b8087 체력바 UI구현 (19시간 전)
+  - child.py, play_scene.py 수정
+  - 체력바 렌더링 시스템 완성
+
+d7783de 몬스터 무리 생성 (19시간 전)
+  - gnome.py, paddlefish.py, panda.py 무리 생성 기능 추가
+  - 체력바 리소스 추가 (warriorUI.png, childUI.png 등)
+
+298bd84 인벤토리, 퀘스트 ui로 변경 (20시간 전)
+  - quest_manager.py 신규 추가 (111줄)
+  - inventory_scene.py 대폭 수정
+  - 한글 폰트 추가 (malgun.ttf)
+
+696f395 ai를 이용한 프로젝트 현재 상황 기록 파일 생성 (2주 전)
+  - PROJECT_STATUS.md 최초 생성
 ```
 
 ### 현재 수정된 파일 (Git Status)
 ```
-M gnome.py - TODO 주석 정리
-M play_scene.py - 디버그 키 F3→9 변경
+(clean) - 모든 변경사항 커밋됨
 ```
 
 ---
@@ -413,16 +434,15 @@ M play_scene.py - 디버그 키 F3→9 변경
    - `resource/title.png` 제작 또는 임시 이미지 배치
 
 ### 기능 확장
-4. **인벤토리 UI 완성**
+4. **인벤토리 및 퀘스트 UI 완성**
    - 아이템 시스템 설계
-   - 텍스트 렌더링 (폰트 추가)
+   - 퀘스트 로직 연동
    - 아이템 획득/사용 로직
 
 5. **추가 게임 콘텐츠**
    - 새로운 적 추가
    - 아이템 드랍 시스템
    - 레벨/스테이지 시스템
-   - 체력바 UI
 
 ### 시스템 개선
 6. **사운드 시스템**
@@ -439,20 +459,21 @@ M play_scene.py - 디버그 키 F3→9 변경
 2. ⚠️ Gnome 애니메이션 프레임 크기 불일치
 3. ⚠️ Panda 프레임 카운트 오류
 4. ⚠️ 히트박스 크기 조정 필요
-5. ⚠️ 인벤토리 UI 미완성
+5. ⚠️ 인벤토리/퀘스트 UI 진행 중 (폰트는 추가됨)
 6. ❓ `background_map.py` 시스템 미사용 (삭제 여부 결정 필요)
 7. ✅ F3 키 바인딩 문제 → 9키로 해결됨
+8. ✅ 체력바 UI → 완성됨
 
 ---
 
 ## 전체 완성도
 
 ```
-████████████████░░░░  75%
+████████████████▓░░░  80%
 
-✅ 완성: 핵심 게임플레이, 전투, AI, 맵, 카메라
-⚠️ 진행중: 애니메이션 튜닝, 히트박스 조정
-❌ 미완성: UI 시스템, 사운드, 추가 콘텐츠
+✅ 완성: 핵심 게임플레이, 전투, AI, 맵, 카메라, 체력바 UI, 몬스터 무리 생성
+⚠️ 진행중: 애니메이션 튜닝, 히트박스 조정, 인벤토리/퀘스트 UI
+❌ 미완성: 사운드, 추가 게임 콘텐츠
 ```
 
 ---

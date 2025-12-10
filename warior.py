@@ -10,8 +10,8 @@ PIXEL_WIDTH = 192
 PIXEL_HEIGHT = 192
 
 # 충돌 박스 크기
-COLLISION_HALF_WIDTH = 30
-COLLISION_HALF_HEIGHT = 30
+COLLISION_HALF_WIDTH = 23
+COLLISION_HALF_HEIGHT = 23
 
 # 공격 박스 크기
 ATTACK_RANGE = 30
@@ -169,6 +169,8 @@ class WAttack1:
         # 공격 시작 시 이동 속도 초기화
         self.warrior.dirx = 0
         self.warrior.diry = 0
+        # 공격 사운드 재생
+        self.warrior.attack_sound.play()
         print(f"[DEBUG] Warrior ATTACK1 시작")
 
     def exit(self, e):
@@ -256,6 +258,8 @@ class WAttack2:
         # 콤보 연결 시에도 이동 속도 초기화
         self.warrior.dirx = 0
         self.warrior.diry = 0
+        # 공격 사운드 재생
+        self.warrior.attack_sound.play()
 
     def exit(self, e):
         pass
@@ -350,6 +354,10 @@ class Warrior:
         self.imageR = load_image('resource/Warrior_Run.png')
         self.imageA1 = load_image('resource/Warrior_Attack1.png')
         self.imageA2 = load_image('resource/Warrior_Attack2.png')
+
+        # 공격 사운드 로드
+        self.attack_sound = load_wav('resource/warrior.wav')
+        self.attack_sound.set_volume(64)  # 볼륨 설정 (0~128)
 
         self.IDLE = WIdle(self)
         self.RUN = WRun(self)

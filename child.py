@@ -18,6 +18,9 @@ MOVE_SPEED = 250  # 픽셀/초 (Warrior보다 약간 느림)
 
 # 체력 (Child는 비전투 캐릭터)
 MAX_HP = 100
+
+# Power 재생 속도
+POWER_REGEN_RATE = 7  # 초당 7씩 회복
 #----------------------------------------------------------------
 
 class CIdle:
@@ -127,6 +130,8 @@ class CInteraction:
         self.has_healed = False
         self.child.dirx = 0
         self.child.diry = 0
+        # 힐 사운드 재생
+        self.child.heal_sound.play()
         print(f"[DEBUG] Child Interaction 시작!")
 
     def exit(self, e):
@@ -200,6 +205,10 @@ class Child:
         self.imageR = load_image('resource/Child_Run.png')
         self.imageInteraction = load_image('resource/Child_Interaction.png')
 
+        # 힐 사운드 로드
+        self.heal_sound = load_wav('resource/child.wav')
+        self.heal_sound.set_volume(64)  # 볼륨 설정 (0~128)
+
         self.IDLE = CIdle(self)
         self.RUN = CRun(self)
         self.INTERACTION = CInteraction(self)
@@ -215,7 +224,12 @@ class Child:
             })
     def update(self, delta_time):
         self.state_machine.update(delta_time)
-        pass
+
+        # Power 자동 재생 (초당 7씩 회복)
+        if self.hp < self.max_hp:
+            self.hp += POWER_REGEN_RATE * delta_time
+            if self.hp > self.max_hp:
+                self.hp = self.max_hp
 
     def draw(self, camera=None):
         self.state_machine.draw(camera)
@@ -243,7 +257,7 @@ class Child:
         self.hp -= damage
         if self.hp < 0:
             self.hp = 0
-        print(f"Child가 {damage} 데미지를 받음! (남은 HP: {self.hp}/{self.max_hp})")
+        print(f"Child가 {damage} 데미지를 받음! (남은 Power: {self.hp}/{self.max_hp})")
 
         # 넉백 효과 (공격자 위치 기반)
         if attacker_x is not None:
@@ -255,7 +269,7 @@ class Child:
                 self.x -= knockback_distance
                 print(f"[DEBUG] Child 넉백: 왼쪽으로 {knockback_distance}px")
 
+        # Child는 죽지 않음 - Power가 0이 되면 play_scene에서 자동으로 Warrior로 전환됨
         if self.hp <= 0:
-            print("Child 사망!")
-            self.is_alive = False
+            print("Child Power 소진! (사라지지 않음, Warrior로 전환됨)")
 #----------------------------------------------------------------

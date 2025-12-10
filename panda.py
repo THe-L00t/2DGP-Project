@@ -24,8 +24,8 @@ COLLISION_HALF_WIDTH = 35
 COLLISION_HALF_HEIGHT = 35
 
 # 공격 박스 크기
-ATTACK_RANGE = 60
-ATTACK_HEIGHT = 45
+ATTACK_RANGE = 100
+ATTACK_HEIGHT = 80
 
 # 이동 속도
 ROTATION_SPEED = 2.0
@@ -308,19 +308,19 @@ class Panda:
             return None
 
         # TODO: 공격 범위를 조정하세요
-        attack_range = 60  # 공격 범위
-        attack_height = 45 # 공격 박스 높이
+        attack_range = 110  # 공격 범위
+        attack_height = 90 # 공격 박스 높이
 
         # 바라보는 방향에 따라 공격 박스 위치 설정
         if self.face_dir == 1:  # 오른쪽
-            left = self.x
-            right = self.x + attack_range
+            left = self.x + 10
+            right = self.x + 10 + attack_range
         else:  # 왼쪽
-            left = self.x - attack_range
-            right = self.x
+            left = self.x - 20 - attack_range
+            right = self.x - 20
 
-        bottom = self.y - attack_height // 2
-        top = self.y + attack_height // 2
+        bottom = self.y - 10 - (attack_height // 2)
+        top = self.y - 10 + (attack_height // 2)
 
         return left, bottom, right, top
 
@@ -330,8 +330,17 @@ class Panda:
             return self.attack_power
         return 0
 
+    def is_guarding(self):
+        """현재 가드 중인지 확인"""
+        return self.state_machine.cur_state == self.GUARD
+
     def take_damage(self, damage, attacker_x=None):
         """데미지를 받음 (넉백 포함)"""
+        # 가드 중이면 데미지를 받지 않고 무시
+        if self.is_guarding():
+            print(f"Panda가 가드 중! 데미지 무효화!")
+            return
+
         self.hp -= damage
         if self.hp < 0:
             self.hp = 0
