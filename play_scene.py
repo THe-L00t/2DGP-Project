@@ -577,7 +577,7 @@ def draw_boss_ui():
     # 화면 크기
     canvas_width = get_canvas_width()
     boss_ui_x = canvas_width // 2  # 화면 중앙
-    boss_ui_y = 700  # 화면 상단
+    boss_ui_y = 550  # 화면 상단
 
     # 보스 Bar 크기 (더 크게)
     boss_bar_width = 400
@@ -590,7 +590,7 @@ def draw_boss_ui():
 
         if bar_draw_width > 0:
             panda_bar.clip_draw(
-                0, 0, bar_draw_width, boss_bar_height,  # 소스 영역
+                0, 0, 200, 30,  # 소스 영역
                 boss_ui_x - (boss_bar_width - bar_draw_width) // 2, boss_ui_y,  # 중심 좌표 조정
                 bar_draw_width, boss_bar_height  # 그릴 크기
             )
