@@ -32,7 +32,7 @@ ROTATION_SPEED = 2.0
 CIRCLE_RADIUS = 100
 
 # 체력
-MAX_HP = 120
+MAX_HP = 1000
 # ============================================================
 
 class PandaIdle:
@@ -73,9 +73,9 @@ class PandaIdle:
 
         # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
         if self.panda.face_dir == 1:
-            self.panda.imageI.clip_draw(int(self.panda.frame) * 256, 0, 256, 256, screen_x, screen_y)
+            self.panda.imageI.clip_draw(int(self.panda.frame) * 256, 0, 256, 256, screen_x, screen_y, 400, 400 )
         else:
-            self.panda.imageI.clip_composite_draw(int(self.panda.frame) * 256, 0, 256, 256, 0, 'h', screen_x, screen_y, 256, 256)
+            self.panda.imageI.clip_composite_draw(int(self.panda.frame) * 256, 0, 256, 256, 0, 'h', screen_x, screen_y, 400, 400)
 
         # 투명도 원상복구
         self.panda.imageI.opacify(1.0)
@@ -119,9 +119,9 @@ class PandaAttack:
 
         # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
         if self.panda.face_dir == 1:
-            self.panda.imageA.clip_draw(int(self.panda.frame) * 256, 0, 256, 256, screen_x, screen_y)
+            self.panda.imageA.clip_draw(int(self.panda.frame) * 256, 0, 256, 256, screen_x, screen_y, 400,400)
         else:
-            self.panda.imageA.clip_composite_draw(int(self.panda.frame) * 256, 0, 256, 256, 0, 'h', screen_x, screen_y, 256, 256)
+            self.panda.imageA.clip_composite_draw(int(self.panda.frame) * 256, 0, 256, 256, 0, 'h', screen_x, screen_y, 400, 400)
 
         # 투명도 원상복구
         self.panda.imageA.opacify(1.0)
@@ -165,9 +165,9 @@ class PandaGuard:
 
         # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
         if self.panda.face_dir == 1:
-            self.panda.imageG.clip_draw(int(self.panda.frame) * 256, 0, 256, 256, screen_x, screen_y)
+            self.panda.imageG.clip_draw(int(self.panda.frame) * 256, 0, 256, 256, screen_x, screen_y,400,400)
         else:
-            self.panda.imageG.clip_composite_draw(int(self.panda.frame) * 256, 0, 256, 256, 0, 'h', screen_x, screen_y, 256, 256)
+            self.panda.imageG.clip_composite_draw(int(self.panda.frame) * 256, 0, 256, 256, 0, 'h', screen_x, screen_y, 400, 400)
 
         # 투명도 원상복구
         self.panda.imageG.opacify(1.0)
@@ -229,9 +229,9 @@ class PandaRun:
 
         # TODO: 프레임 크기를 실제 이미지에 맞게 수정하세요
         if self.panda.face_dir == 1:
-            self.panda.imageR.clip_draw(int(self.panda.frame) * 256, 0, 256, 256, screen_x, screen_y)
+            self.panda.imageR.clip_draw(int(self.panda.frame) * 256, 0, 256, 256, screen_x, screen_y, 400,400)
         else:
-            self.panda.imageR.clip_composite_draw(int(self.panda.frame) * 256, 0, 256, 256, 0, 'h', screen_x, screen_y, 256, 256)
+            self.panda.imageR.clip_composite_draw(int(self.panda.frame) * 256, 0, 256, 256, 0, 'h', screen_x, screen_y, 400, 400)
 
         # 투명도 원상복구
         self.panda.imageR.opacify(1.0)
@@ -297,8 +297,8 @@ class Panda:
     def get_bb(self):
         """충돌 박스"""
         # TODO: 히트박스 크기를 몬스터에 맞게 조정하세요
-        half_width = 35
-        half_height = 35
+        half_width = int(35*1.56)
+        half_height = int(35*1.56)
         return self.x - half_width, self.y - half_height, self.x + half_width, self.y + half_height
 
     def get_attack_bb(self):
@@ -308,19 +308,19 @@ class Panda:
             return None
 
         # TODO: 공격 범위를 조정하세요
-        attack_range = 110  # 공격 범위
-        attack_height = 90 # 공격 박스 높이
+        attack_range = 110*1.56  # 공격 범위
+        attack_height = 90*1.56 # 공격 박스 높이
 
         # 바라보는 방향에 따라 공격 박스 위치 설정
         if self.face_dir == 1:  # 오른쪽
-            left = self.x + 10
-            right = self.x + 10 + attack_range
+            left = int(self.x + 10*1.56)
+            right = int(self.x + 10*1.56 + attack_range)
         else:  # 왼쪽
-            left = self.x - 20 - attack_range
-            right = self.x - 20
+            left = int(self.x - 20*1.56 - attack_range)
+            right = int(self.x - 20*1.56)
 
-        bottom = self.y - 10 - (attack_height // 2)
-        top = self.y - 10 + (attack_height // 2)
+        bottom = int(self.y - 10*1.56 - (attack_height // 2))
+        top = int(self.y - 10*1.56 + (attack_height // 2))
 
         return left, bottom, right, top
 

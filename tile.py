@@ -78,6 +78,7 @@ class Tile:
     OVERLAY_ON_OCEAN = [
         TileType.TOP_LEFT, TileType.TOP, TileType.TOP_RIGHT,
         TileType.LEFT, TileType.RIGHT,
+        TileType.BOTTOM_LEFT, TileType.BOTTOM_RIGHT,
         TileType.WAVE_LEFT, TileType.WAVE_CENTER, TileType.WAVE_RIGHT,
         TileType.CLIFF_LEFT, TileType.CLIFF_CENTER, TileType.CLIFF_RIGHT
     ]

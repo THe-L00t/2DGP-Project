@@ -31,23 +31,39 @@ warrior_bar = None
 child_ui = None
 child_bar = None
 
+# 보스 UI
+panda_ui = None
+panda_bar = None
+boss_panda = None  # 현재 보스로 지정된 판다
+
 # 배경음악
 bgm = None
 
-def spawn_monster_group(monster_class, center_x, center_y, count, radius=200):
+def spawn_monster_group(monster_class, center_x, center_y, count, radius=200, use_tile_coords=False):
     """
     특정 위치 주변에 몬스터 무리를 랜덤하게 생성
 
     Args:
         monster_class: 몬스터 클래스 (Gnome, Paddlefish, Panda)
-        center_x: 중심 X 좌표
-        center_y: 중심 Y 좌표
+        center_x: 중심 X 좌표 (픽셀) 또는 타일 인덱스
+        center_y: 중심 Y 좌표 (픽셀) 또는 타일 인덱스
         count: 생성할 몬스터 수
         radius: 중심으로부터의 최대 거리 (기본 200px)
+        use_tile_coords: True면 center_x, center_y를 타일 인덱스로 해석 (기본 False)
 
     Returns:
         list: 생성된 몬스터 객체 리스트
     """
+    # 타일 인덱스를 픽셀 좌표로 변환
+    if use_tile_coords:
+        TILE_SIZE = 64
+        # 타일 중심 좌표로 변환
+        pixel_center_x = center_x * TILE_SIZE + TILE_SIZE // 2
+        pixel_center_y = center_y * TILE_SIZE + TILE_SIZE // 2
+    else:
+        pixel_center_x = center_x
+        pixel_center_y = center_y
+
     monsters = []
     for i in range(count):
         # 랜덤 오프셋 계산 (원형 분포)
@@ -59,8 +75,8 @@ def spawn_monster_group(monster_class, center_x, center_y, count, radius=200):
 
         # 몬스터 생성
         monster = monster_class(
-            x=center_x + offset_x,
-            y=center_y + offset_y
+            x=pixel_center_x + offset_x,
+            y=pixel_center_y + offset_y
         )
 
         # 타겟 설정 (warrior를 기본 타겟으로)
@@ -68,7 +84,10 @@ def spawn_monster_group(monster_class, center_x, center_y, count, radius=200):
             monster.set_target_character(warrior)
 
         monsters.append(monster)
-        print(f"[SPAWN] {monster_class.__name__} 생성 위치: ({monster.x:.0f}, {monster.y:.0f})")
+        if use_tile_coords:
+            print(f"[SPAWN] {monster_class.__name__} 생성 위치: 타일({center_x}, {center_y}) -> 픽셀({monster.x:.0f}, {monster.y:.0f})")
+        else:
+            print(f"[SPAWN] {monster_class.__name__} 생성 위치: ({monster.x:.0f}, {monster.y:.0f})")
 
     return monsters
 
@@ -88,16 +107,21 @@ def collide(a, b):
 def enter():
     """Scene 진입 시 호출"""
     global world, warrior, child, camera, tilemap, gnome, paddlefish, panda, cur_character, show_collision_box, quest_manager
-    global warrior_ui, warrior_bar, child_ui, child_bar, bgm
+    global warrior_ui, warrior_bar, child_ui, child_bar, panda_ui, panda_bar, boss_panda, bgm
 
     cur_character = 'warrior'
     show_collision_box = False
+    boss_panda = None  # 초기화
 
     # UI 이미지 로드
     warrior_ui = load_image('resource/warriorUI.png')
     warrior_bar = load_image('resource/warriorBar.png')
     child_ui = load_image('resource/childUI.png')
     child_bar = load_image('resource/childBar.png')
+
+    # 보스 UI 이미지 로드
+    panda_ui = load_image('resource/pandaUI.png')
+    panda_bar = load_image('resource/warriorBar.png')  # warriorBar 재사용
 
     # 배경음악 로드 및 반복 재생
     bgm = load_music('resource/background.mp3')
@@ -113,9 +137,12 @@ def enter():
     tilemap.debug_mode = False  # 기본 OFF (F3으로 토글)
     print("타일맵 로딩 완료!")
 
-    # 캐릭터 생성 (맵 중앙에 배치)
-    spawn_x = 20 * 64  # 20번째 타일 (중앙)
-    spawn_y = 20 * 64  # 20번째 타일
+    # 캐릭터 생성 (타일 인덱스 3, 3에 배치)
+    TILE_SIZE = 64
+    spawn_tile_x = 3
+    spawn_tile_y = 3
+    spawn_x = spawn_tile_x * TILE_SIZE + TILE_SIZE // 2  # 타일 중심
+    spawn_y = spawn_tile_y * TILE_SIZE + TILE_SIZE // 2  # 타일 중심
 
     warrior = Warrior()
     warrior.x = spawn_x
@@ -126,26 +153,41 @@ def enter():
     child.y = spawn_y
     child.warrior = warrior  # Warrior 참조 설정
 
+    print(f"캐릭터 생성: 타일({spawn_tile_x}, {spawn_tile_y}) -> 픽셀({spawn_x}, {spawn_y})")
+
     # 카메라 생성
     camera = Camera()
     camera.set_target(warrior)
+    # 맵 크기 설정 (40x40 타일, 타일 크기 64x64)
+    camera.set_map_bounds(40 * 64, 40 * 64)  # 2560 x 2560
 
     # ========================================
-    # 몬스터 무리 생성 (랜덤 위치)
+    # 몬스터 무리 생성 (타일 인덱스 기반)
     # ========================================
-    # spawn_monster_group(몬스터클래스, 중심X, 중심Y, 수량, 반경)
-    # 반경: 몬스터들이 중심으로부터 퍼질 범위 (기본 200px)
+    # spawn_monster_group(몬스터클래스, 중심X, 중심Y, 수량, 반경, use_tile_coords=True)
+    # 반경: 몬스터들이 중심으로부터 퍼질 범위 (픽셀 단위)
 
     print("=== 몬스터 생성 중... ===")
 
-    # Gnome 무리 (맵 북동쪽 - 12마리)
-    gnome_list = spawn_monster_group(Gnome, spawn_x + 400, spawn_y + 300, 12, radius=250)
+    # Gnome 무리 배치
+    gnome_group1 = spawn_monster_group(Gnome, 17, 5, 1, radius=10, use_tile_coords=True)
+    gnome_group2 = spawn_monster_group(Gnome, 20, 8, 5, radius=50, use_tile_coords=True)
+    gnome_group3 = spawn_monster_group(Gnome, 35, 5, 5, radius=50, use_tile_coords=True)
+    gnome_group4 = spawn_monster_group(Gnome, 29, 17, 5, radius=50, use_tile_coords=True)
 
-    # Paddlefish 무리 (맵 남서쪽 - 15마리)
-    paddlefish_list = spawn_monster_group(Paddlefish, spawn_x - 400, spawn_y - 300, 15, radius=300)
+    # Paddlefish 무리 배치
+    paddlefish_group1 = spawn_monster_group(Paddlefish, 6, 12, 3, radius=30, use_tile_coords=True)
+    paddlefish_group2 = spawn_monster_group(Paddlefish, 29, 17, 5, radius=70, use_tile_coords=True)
+    paddlefish_group3 = spawn_monster_group(Paddlefish, 23, 30, 2, radius=20, use_tile_coords=True)
+    paddlefish_group4 = spawn_monster_group(Paddlefish, 5, 34, 5, radius=70, use_tile_coords=True)
 
-    # Panda 무리 (맵 북서쪽 - 3마리, 보스 느낌)
-    panda_list = spawn_monster_group(Panda, spawn_x - 300, spawn_y + 400, 3, radius=150)
+    # Panda 보스 배치
+    panda_group1 = spawn_monster_group(Panda, 31, 36, 1, radius=10, use_tile_coords=True)
+
+    # 모든 몬스터 리스트 합치기
+    gnome_list = gnome_group1 + gnome_group2 + gnome_group3 + gnome_group4
+    paddlefish_list = paddlefish_group1 + paddlefish_group2 + paddlefish_group3 + paddlefish_group4
+    panda_list = panda_group1
 
     print(f"생성 완료: Gnome {len(gnome_list)}마리, Paddlefish {len(paddlefish_list)}마리, Panda {len(panda_list)}마리")
 
@@ -178,41 +220,41 @@ def enter():
 
     quest_manager = QuestManager()
 
-    # 퀘스트 1: 놈 사냥 (첫 번째 퀘스트 - 자동으로 활성화됨)
+    # 퀘스트 1: 놈 처치 (첫 번째 퀘스트 - 자동으로 활성화됨)
     quest_manager.add_quest(Quest(
-        quest_id="kill_gnome_10",
+        quest_id="kill_gnome_2",
         title="노움 처치",
         description="노움을 잡아 판다의 단서를 찾자",
         target_monster="Gnome",
         target_count=2
     ))
-    # 퀘스트 1: 놈 사냥 (첫 번째 퀘스트 - 자동으로 활성화됨)
+    # 퀘스트 2: 놈 사냥 (퀘스트 1 완료 후 활성화)
     quest_manager.add_quest(Quest(
-        quest_id="kill_gnome_10",
+        quest_id="kill_gnome_7",
         title="노움 사냥",
         description="정말 모든 노움이 판다를 모를까?",
         target_monster="Gnome",
         target_count=7
     ))
-    # 퀘스트 2: 패들피쉬 소탕 (퀘스트 1 완료 후 활성화)
+    # 퀘스트 3: 패들피쉬 처치 (퀘스트 2 완료 후 활성화)
     quest_manager.add_quest(Quest(
-        quest_id="kill_paddlefish_5",
+        quest_id="kill_paddlefish_3",
         title="패들피쉬 처치",
         description="노움은 아무것도 모른다. 패들피쉬를 잡아 단서를 찾자",
         target_monster="Paddlefish",
         target_count=3
     ))
-    # 퀘스트 3: 패들피쉬 소탕 (퀘스트 1 완료 후 활성화)
+    # 퀘스트 4: 패들피쉬 소탕 (퀘스트 3 완료 후 활성화)
     quest_manager.add_quest(Quest(
-        quest_id="kill_paddlefish_5",
+        quest_id="kill_paddlefish_10",
         title="패들피쉬 소탕",
         description="패들피쉬는 무언가를 알고 있다. 소탕하자",
         target_monster="Paddlefish",
         target_count=10
     ))
-    # 퀘스트 3: 판다 도전 (퀘스트 2 완료 후 활성화)
+    # 퀘스트 5: 판다 도전 (퀘스트 4 완료 후 활성화)
     quest_manager.add_quest(Quest(
-        quest_id="kill_panda_3",
+        quest_id="kill_panda_1",
         title="보스:판다 도전",
         description="드디어 판다의 위치를 알아냈다. 판다를 처치하라!",
         target_monster="Panda",
@@ -370,6 +412,12 @@ def check_attack_collisions():
                     attacker.hit_targets.add(target_id)
                     continue  # 데미지 처리 없이 넘어감
 
+                # Panda를 공격하면 보스 체력바 활성화
+                if target_class == 'Panda' and attacker_class in ['Warrior', 'Child']:
+                    global boss_panda
+                    boss_panda = target
+                    print(f"[BOSS] 판다 보스 체력바 활성화!")
+
                 # 데미지 적용 (넉백을 위해 공격자의 x 좌표 전달)
                 print(f"[DEBUG] *** 충돌 감지! {attacker.__class__.__name__} -> {target.__class__.__name__}")
                 print(f"[DEBUG]     공격 박스: {attack_bb}")
@@ -392,7 +440,7 @@ def collide_bb(bb1, bb2):
 
 def remove_dead_objects():
     """체력이 0이 된 객체들을 제거"""
-    global world, quest_manager
+    global world, quest_manager, boss_panda
 
     # 사망한 객체들을 찾아서 제거
     dead_objects = [obj for obj in world if hasattr(obj, 'is_alive') and not obj.is_alive]
@@ -402,6 +450,11 @@ def remove_dead_objects():
         monster_name = obj.__class__.__name__
         if quest_manager and monster_name in ['Gnome', 'Paddlefish', 'Panda']:
             quest_manager.on_monster_killed(monster_name)
+
+        # 보스 판다가 죽으면 체력바 비활성화
+        if obj == boss_panda:
+            boss_panda = None
+            print("[BOSS] 판다 보스 처치! 체력바 비활성화")
 
         world.remove(obj)
         print(f"{obj.__class__.__name__}이(가) 월드에서 제거되었습니다.")
@@ -516,9 +569,38 @@ def draw_ui():
     if child_ui:
         child_ui.draw(ui_x, child_ui_y, 240, 70)
 
+def draw_boss_ui():
+    """보스 (판다) 체력바 그리기 (화면 상단 중앙)"""
+    if not boss_panda or not boss_panda.is_alive:
+        return
+
+    # 화면 크기
+    canvas_width = get_canvas_width()
+    boss_ui_x = canvas_width // 2  # 화면 중앙
+    boss_ui_y = 700  # 화면 상단
+
+    # 보스 Bar 크기 (더 크게)
+    boss_bar_width = 400
+    boss_bar_height = 40
+
+    # Boss HP Bar (뒤에 그리기)
+    if panda_bar:
+        hp_ratio = boss_panda.hp / boss_panda.max_hp
+        bar_draw_width = int(boss_bar_width * hp_ratio)
+
+        if bar_draw_width > 0:
+            panda_bar.clip_draw(
+                0, 0, bar_draw_width, boss_bar_height,  # 소스 영역
+                boss_ui_x - (boss_bar_width - bar_draw_width) // 2, boss_ui_y,  # 중심 좌표 조정
+                bar_draw_width, boss_bar_height  # 그릴 크기
+            )
+
+    # Boss UI (앞에 그리기)
+    if panda_ui:
+        panda_ui.draw(boss_ui_x, boss_ui_y, 480, 120)  # 더 크게 표시
+
 def draw():
     """렌더링"""
-    clear_canvas()
 
     # 타일맵 그리기
     if tilemap:
@@ -554,4 +636,6 @@ def draw():
     # UI 그리기 (좌측 하단)
     draw_ui()
 
-    update_canvas()
+    # 보스 UI 그리기 (화면 상단)
+    draw_boss_ui()
+
