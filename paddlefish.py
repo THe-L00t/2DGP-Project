@@ -155,7 +155,16 @@ class PaddlefishAttack:
         self.paddlefish.dirx = 0
         self.paddlefish.diry = 0
         self.has_attacked = False  # 공격 판정을 한 번만 하기 위한 플래그
-        print(f"[DEBUG] Paddlefish ATTACK 상태 진입 (frame: {self.paddlefish.frame})")
+
+        # 타겟 캐릭터를 향해 얼굴 방향 설정
+        if self.paddlefish.target_character:
+            dx = self.paddlefish.target_character.x - self.paddlefish.x
+            if dx > 0:
+                self.paddlefish.face_dir = 1  # 오른쪽
+            elif dx < 0:
+                self.paddlefish.face_dir = -1  # 왼쪽
+
+        print(f"[DEBUG] Paddlefish ATTACK 상태 진입 (frame: {self.paddlefish.frame}, face_dir: {self.paddlefish.face_dir})")
 
     def exit(self, e):
         # 공격 후 쿨다운 시작

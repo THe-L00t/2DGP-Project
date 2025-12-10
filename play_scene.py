@@ -216,7 +216,7 @@ def enter():
     paddlefish_group4 = spawn_monster_group(Paddlefish, 5, 34, 5, radius=70, use_tile_coords=True)
 
     # Panda 보스 배치
-    panda_group1 = spawn_monster_group(Panda, 31, 36, 1, radius=10, use_tile_coords=True)
+    panda_group1 = spawn_monster_group(Panda, 34, 37, 1, radius=10, use_tile_coords=True)
 
     # 모든 몬스터 리스트 합치기
     gnome_list = gnome_group1 + gnome_group2 + gnome_group3 + gnome_group4

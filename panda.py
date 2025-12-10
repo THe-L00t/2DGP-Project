@@ -93,6 +93,15 @@ class PandaAttack:
         self.panda.frame = 0
         self.attack_time = 0
 
+        # 타겟 캐릭터를 향해 얼굴 방향 설정
+        if self.panda.target_character:
+            dx = self.panda.target_character.x - self.panda.x
+            if dx > 0:
+                self.panda.face_dir = 1  # 오른쪽
+            elif dx < 0:
+                self.panda.face_dir = -1  # 왼쪽
+            print(f"[DEBUG] Panda ATTACK 상태 진입 (face_dir: {self.panda.face_dir})")
+
     def exit(self, e):
         pass
 
@@ -138,6 +147,15 @@ class PandaGuard:
     def enter(self, e):
         self.panda.frame = 0
         self.guard_time = 0
+
+        # 타겟 캐릭터를 향해 얼굴 방향 설정
+        if self.panda.target_character:
+            dx = self.panda.target_character.x - self.panda.x
+            if dx > 0:
+                self.panda.face_dir = 1  # 오른쪽
+            elif dx < 0:
+                self.panda.face_dir = -1  # 왼쪽
+            print(f"[DEBUG] Panda GUARD 상태 진입 (face_dir: {self.panda.face_dir})")
 
     def exit(self, e):
         pass
@@ -257,6 +275,9 @@ class Panda:
         # 피격 이펙트
         self.hit_effect_time = 0.0  # 피격 효과 남은 시간
 
+        # 타겟 캐릭터 (play_scene에서 설정)
+        self.target_character = None
+
         # TODO: 이미지 파일 경로를 실제 파일로 변경하세요
         self.imageI = load_image('resource/Panda_Idle.png')    # 대기 애니메이션
         self.imageR = load_image('resource/Panda_Run.png')     # 달리기 애니메이션
@@ -373,5 +394,9 @@ class Panda:
             if cycle_position > blink_interval / 2:
                 image.opacify(0.5)
             # else: 기본 투명도 유지 (1.0)
+
+    def set_target_character(self, character):
+        """타겟 캐릭터 설정"""
+        self.target_character = character
 
 #----------------------------------------------------------------
