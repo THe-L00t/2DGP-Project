@@ -41,7 +41,7 @@ class PandaIdle:
         self.panda = panda
         self.animation_speed = 5  # 초당 프레임 수
         self.idle_time = 0
-        self.max_idle_time = 1.5  # 1.5초 대기 후 다른 상태로 전환
+        self.max_idle_time = 1.0  # 1.0초 대기 후 다른 상태로 전환 (더 빠르게)
 
     def enter(self, e):
         self.panda.frame = 0
@@ -57,8 +57,40 @@ class PandaIdle:
         # 대기 시간 체크
         self.idle_time += delta_time
         if self.idle_time >= self.max_idle_time:
-            # 무작위로 RUN, ATTACK, GUARD 상태로 전환
-            next_state = random.choice([self.panda.RUN, self.panda.ATTACK, self.panda.GUARD])
+            # 피격당한 적이 있으면 AI 패턴 변경
+            if self.panda.has_been_hit:
+                # 플레이어가 가까이 있으면 공격적으로 행동
+                if self.panda.is_player_in_attack_range():
+                    roll = random.random()
+                    if roll < self.panda.aggressive_attack_chance:
+                        # 50% 확률로 즉시 공격
+                        next_state = self.panda.ATTACK
+                        print("[AI] Panda: 플레이어가 가까움 -> 공격!")
+                    elif roll < self.panda.aggressive_attack_chance + self.panda.guard_chance:
+                        # 30% 확률로 가드
+                        next_state = self.panda.GUARD
+                        print("[AI] Panda: 플레이어가 가까움 -> 가드")
+                    else:
+                        # 20% 확률로 회피
+                        next_state = self.panda.RUN
+                        print("[AI] Panda: 플레이어가 가까움 -> 회피")
+                elif self.panda.is_player_near():
+                    # 감지 범위 안이면 공격 우선 (70% 공격, 30% 접근)
+                    if random.random() < 0.7:
+                        next_state = self.panda.ATTACK
+                        print("[AI] Panda: 플레이어 감지 -> 공격!")
+                    else:
+                        next_state = self.panda.RUN
+                        print("[AI] Panda: 플레이어 감지 -> 접근")
+                else:
+                    # 플레이어가 멀리 있으면 접근
+                    next_state = self.panda.RUN
+                    print("[AI] Panda: 플레이어 멀리 있음 -> 접근")
+            else:
+                # 피격 전에는 기존 랜덤 패턴
+                next_state = random.choice([self.panda.RUN, self.panda.ATTACK, self.panda.GUARD])
+                print("[AI] Panda: 랜덤 패턴")
+
             self.panda.state_machine.cur_state = next_state
             next_state.enter(('AUTO_TRANSITION', 0))
 
@@ -112,8 +144,30 @@ class PandaAttack:
         # 공격 시간 체크
         self.attack_time += delta_time
         if self.attack_time >= self.max_attack_time:
-            # 공격 후 IDLE, RUN, GUARD 상태로 전환
-            next_state = random.choice([self.panda.IDLE, self.panda.RUN, self.panda.GUARD])
+            # 피격당한 적이 있으면 공격 후 행동 패턴
+            if self.panda.has_been_hit:
+                # 공격 후에도 플레이어가 가까우면 연속 공격 시도 (40% 확률)
+                if self.panda.is_player_in_attack_range():
+                    roll = random.random()
+                    if roll < 0.4:
+                        # 40% 확률로 연속 공격
+                        next_state = self.panda.ATTACK
+                        print("[AI] Panda: 공격 후 연속 공격!")
+                    elif roll < 0.7:
+                        # 30% 확률로 가드
+                        next_state = self.panda.GUARD
+                        print("[AI] Panda: 공격 후 가드")
+                    else:
+                        # 30% 확률로 회피
+                        next_state = self.panda.RUN
+                        print("[AI] Panda: 공격 후 회피")
+                else:
+                    next_state = self.panda.IDLE
+                    print("[AI] Panda: 공격 후 대기")
+            else:
+                # 피격 전에는 기존 랜덤 패턴
+                next_state = random.choice([self.panda.IDLE, self.panda.RUN, self.panda.GUARD])
+
             self.panda.state_machine.cur_state = next_state
             next_state.enter(('AUTO_TRANSITION', 0))
 
@@ -142,7 +196,7 @@ class PandaGuard:
         self.panda = panda
         self.animation_speed = 5  # 초당 프레임 수
         self.guard_time = 0
-        self.max_guard_time = 2.0  # 2초 방어 후 다른 상태로 전환
+        self.max_guard_time = 1.5  # 1.5초 방어 후 다른 상태로 전환 (더 빠르게 반격)
 
     def enter(self, e):
         self.panda.frame = 0
@@ -167,8 +221,31 @@ class PandaGuard:
         # 방어 시간 체크
         self.guard_time += delta_time
         if self.guard_time >= self.max_guard_time:
-            # 방어 후 IDLE, RUN, ATTACK 상태로 전환
-            next_state = random.choice([self.panda.IDLE, self.panda.RUN, self.panda.ATTACK])
+            # 피격당한 적이 있으면 가드 후 반격 기회를 노림
+            if self.panda.has_been_hit:
+                # 플레이어가 공격 범위 안에 있으면 즉시 반격 (80% 확률)
+                if self.panda.is_player_in_attack_range():
+                    if random.random() < 0.8:
+                        next_state = self.panda.ATTACK
+                        print("[AI] Panda: 가드 후 즉시 반격!")
+                    else:
+                        next_state = self.panda.RUN
+                        print("[AI] Panda: 가드 후 회피")
+                elif self.panda.is_player_near():
+                    # 가까우면 접근하여 공격 (70% 확률)
+                    if random.random() < 0.7:
+                        next_state = self.panda.ATTACK
+                        print("[AI] Panda: 가드 후 공격!")
+                    else:
+                        next_state = self.panda.RUN
+                        print("[AI] Panda: 가드 후 접근")
+                else:
+                    next_state = self.panda.IDLE
+                    print("[AI] Panda: 가드 후 대기")
+            else:
+                # 피격 전에는 기존 랜덤 패턴
+                next_state = random.choice([self.panda.IDLE, self.panda.RUN, self.panda.ATTACK])
+
             self.panda.state_machine.cur_state = next_state
             next_state.enter(('AUTO_TRANSITION', 0))
 
@@ -200,7 +277,7 @@ class PandaRun:
         self.circle_radius = 100  # 원형 궤도 반지름
         self.angle = 0  # 현재 각도
         self.run_time = 0
-        self.max_run_time = 5.0  # 5초 원형 이동 후 다른 상태로 전환
+        self.max_run_time = 3.0  # 3초 원형 이동 후 다른 상태로 전환 (더 빠르게)
 
     def enter(self, e):
         self.panda.frame = 0
@@ -210,6 +287,10 @@ class PandaRun:
         self.center_x = self.panda.x
         self.center_y = self.panda.y
 
+        # 피격 후 회피 모드인지 확인
+        if self.panda.has_been_hit and self.panda.is_player_in_attack_range():
+            print("[AI] Panda: 회피 모드 시작!")
+
     def exit(self, e):
         pass
 
@@ -217,22 +298,73 @@ class PandaRun:
         # TODO: 애니메이션 프레임 수를 실제 이미지에 맞게 수정하세요
         self.panda.frame = (self.panda.frame + self.animation_speed * delta_time) % 6
 
-        # 원형 궤도 이동
-        self.angle += self.rotation_speed * delta_time
-        self.panda.x = self.center_x + math.cos(self.angle) * self.circle_radius
-        self.panda.y = self.center_y + math.sin(self.angle) * self.circle_radius
-
-        # 이동 방향에 따라 캐릭터 방향 전환
-        if math.cos(self.angle) > 0:
-            self.panda.face_dir = 1
+        # 피격 후에는 플레이어에게서 멀어지는 방향으로 도망
+        if self.panda.has_been_hit and self.panda.target_character and self.panda.is_player_in_attack_range():
+            # 플레이어에게서 멀어지는 방향으로 이동
+            dx = self.panda.x - self.panda.target_character.x
+            dy = self.panda.y - self.panda.target_character.y
+            distance = math.sqrt(dx * dx + dy * dy)
+            if distance > 0:
+                # 정규화하여 방향 설정
+                dx /= distance
+                dy /= distance
+                # 도망 속도
+                escape_speed = 150
+                self.panda.x += dx * escape_speed * delta_time
+                self.panda.y += dy * escape_speed * delta_time
+                # 이동 방향에 따라 얼굴 방향 전환
+                if dx > 0:
+                    self.panda.face_dir = 1
+                else:
+                    self.panda.face_dir = -1
         else:
-            self.panda.face_dir = -1
+            # 기존 원형 궤도 이동
+            self.angle += self.rotation_speed * delta_time
+            self.panda.x = self.center_x + math.cos(self.angle) * self.circle_radius
+            self.panda.y = self.center_y + math.sin(self.angle) * self.circle_radius
+
+            # 이동 방향에 따라 캐릭터 방향 전환
+            if math.cos(self.angle) > 0:
+                self.panda.face_dir = 1
+            else:
+                self.panda.face_dir = -1
 
         # 이동 시간 체크
         self.run_time += delta_time
         if self.run_time >= self.max_run_time:
-            # 이동 후 IDLE, ATTACK, GUARD 상태로 전환
-            next_state = random.choice([self.panda.IDLE, self.panda.ATTACK, self.panda.GUARD])
+            # 피격당한 적이 있으면 상황에 맞게 전환
+            if self.panda.has_been_hit:
+                # 플레이어가 공격 범위 안에 있으면 공격 우선 (60% 확률)
+                if self.panda.is_player_in_attack_range():
+                    roll = random.random()
+                    if roll < 0.6:
+                        # 60% 확률로 공격
+                        next_state = self.panda.ATTACK
+                        print("[AI] Panda: 회피 후 공격!")
+                    elif roll < 0.85:
+                        # 25% 확률로 가드
+                        next_state = self.panda.GUARD
+                        print("[AI] Panda: 회피 후 가드")
+                    else:
+                        # 15% 확률로 대기
+                        next_state = self.panda.IDLE
+                        print("[AI] Panda: 회피 후 대기")
+                elif self.panda.is_player_near():
+                    # 중거리면 공격 우선 (75% 확률)
+                    if random.random() < 0.75:
+                        next_state = self.panda.ATTACK
+                        print("[AI] Panda: 회피 후 공격!")
+                    else:
+                        next_state = self.panda.IDLE
+                        print("[AI] Panda: 회피 후 대기")
+                else:
+                    # 멀리 있으면 대기
+                    next_state = self.panda.IDLE
+                    print("[AI] Panda: 회피 후 대기")
+            else:
+                # 피격 전에는 기존 랜덤 패턴
+                next_state = random.choice([self.panda.IDLE, self.panda.ATTACK, self.panda.GUARD])
+
             self.panda.state_machine.cur_state = next_state
             next_state.enter(('AUTO_TRANSITION', 0))
 
@@ -267,7 +399,7 @@ class Panda:
         self.max_hp = MAX_HP
 
         # 공격력
-        self.attack_power = 20  # Panda의 공격력 (가장 강함)
+        self.attack_power = 70  # Panda의 공격력 (가장 강함)
 
         # 생존 상태
         self.is_alive = True
@@ -277,6 +409,14 @@ class Panda:
 
         # 타겟 캐릭터 (play_scene에서 설정)
         self.target_character = None
+
+        # AI 패턴 관련
+        self.has_been_hit = False  # 한 번이라도 피격당했는지
+        self.player_detection_range = 250  # 플레이어 감지 범위
+        self.attack_range = 150  # 공격 범위
+        self.guard_chance = 0.3  # 가드 확률 (30% - 더 공격적으로)
+        self.aggressive_attack_chance = 0.5  # 근접 시 공격 확률 (50%)
+        self.last_state_change_time = 0  # 마지막 상태 변경 시간
 
         # TODO: 이미지 파일 경로를 실제 파일로 변경하세요
         self.imageI = load_image('resource/Panda_Idle.png')    # 대기 애니메이션
@@ -370,6 +510,11 @@ class Panda:
         # 피격 이펙트 활성화 (0.5초)
         self.hit_effect_time = 0.5
 
+        # 첫 피격 시 AI 패턴 활성화
+        if not self.has_been_hit:
+            self.has_been_hit = True
+            print("[AI] Panda: 피격! 공격적인 AI 패턴 활성화!")
+
         # 넉백 효과 (공격자 위치 기반)
         if attacker_x is not None:
             knockback_distance = 20  # 밀려나는 거리
@@ -398,5 +543,21 @@ class Panda:
     def set_target_character(self, character):
         """타겟 캐릭터 설정"""
         self.target_character = character
+
+    def get_distance_to_player(self):
+        """플레이어까지의 거리 반환"""
+        if not self.target_character:
+            return float('inf')
+        dx = self.target_character.x - self.x
+        dy = self.target_character.y - self.y
+        return math.sqrt(dx * dx + dy * dy)
+
+    def is_player_near(self):
+        """플레이어가 가까이 있는지 확인"""
+        return self.get_distance_to_player() < self.player_detection_range
+
+    def is_player_in_attack_range(self):
+        """플레이어가 공격 범위 안에 있는지 확인"""
+        return self.get_distance_to_player() < self.attack_range
 
 #----------------------------------------------------------------
