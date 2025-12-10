@@ -41,6 +41,7 @@ class QuestManager:
     """퀘스트 관리자 클래스"""
     def __init__(self):
         self.quests = []  # 모든 퀘스트 목록 (순서대로)
+        self.on_quest_update_callback = None  # 퀘스트 갱신 시 호출될 콜백
 
     def add_quest(self, quest):
         """퀘스트 추가 (순서대로 추가해야 함)"""
@@ -91,6 +92,9 @@ class QuestManager:
                         next_quest = self.quests[i + 1]
                         next_quest.is_active = True
                         print(f"[QUEST] 새 퀘스트 활성화: {next_quest.title}")
+                        # 새 퀘스트 활성화 알림만 표시
+                        if self.on_quest_update_callback:
+                            self.on_quest_update_callback()
                     else:
                         print(f"[QUEST] 모든 퀘스트 완료!")
 

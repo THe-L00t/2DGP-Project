@@ -39,6 +39,15 @@ boss_panda = None  # 현재 보스로 지정된 판다
 # 배경음악
 bgm = None
 
+# 퀘스트 알림
+quest_alarm_image = None
+quest_alarm_timer = 0.0  # 알림 표시 남은 시간
+
+# 엔딩
+ending_image = None
+is_ending = False  # 엔딩 진행 중인지
+ending_timer = 0.0  # 엔딩 화면 표시 시간
+
 def spawn_monster_group(monster_class, center_x, center_y, count, radius=200, use_tile_coords=False):
     """
     특정 위치 주변에 몬스터 무리를 랜덤하게 생성
@@ -104,14 +113,23 @@ def collide(a, b):
 
     return True
 
+def on_quest_update():
+    """퀘스트 갱신 시 호출되는 콜백 함수"""
+    global quest_alarm_timer
+    quest_alarm_timer = 0.5  # 0.5초 동안 알림 표시
+
 def enter():
     """Scene 진입 시 호출"""
     global world, warrior, child, camera, tilemap, gnome, paddlefish, panda, cur_character, show_collision_box, quest_manager
     global warrior_ui, warrior_bar, child_ui, child_bar, panda_ui, panda_bar, boss_panda, bgm
+    global quest_alarm_image, quest_alarm_timer, ending_image, is_ending, ending_timer
 
     cur_character = 'warrior'
     show_collision_box = False
     boss_panda = None  # 초기화
+    quest_alarm_timer = 0.0  # 초기화
+    is_ending = False  # 초기화
+    ending_timer = 0.0  # 초기화
 
     # UI 이미지 로드
     warrior_ui = load_image('resource/warriorUI.png')
@@ -122,6 +140,22 @@ def enter():
     # 보스 UI 이미지 로드
     panda_ui = load_image('resource/pandaUI.png')
     panda_bar = load_image('resource/warriorBar.png')  # warriorBar 재사용
+
+    # 퀘스트 알림 이미지 로드
+    try:
+        quest_alarm_image = load_image('resource/qAlarm.png')
+        print("[QUEST] 퀘스트 알림 이미지 로드 완료")
+    except:
+        quest_alarm_image = None
+        print("[WARNING] qAlarm.png를 로드할 수 없습니다.")
+
+    # 엔딩 이미지 로드
+    try:
+        ending_image = load_image('resource/ending.png')
+        print("[ENDING] 엔딩 이미지 로드 완료")
+    except:
+        ending_image = None
+        print("[WARNING] ending.png를 로드할 수 없습니다.")
 
     # 배경음악 로드 및 반복 재생
     bgm = load_music('resource/background.mp3')
@@ -220,6 +254,9 @@ def enter():
 
     quest_manager = QuestManager()
 
+    # 퀘스트 갱신 콜백 설정
+    quest_manager.on_quest_update_callback = on_quest_update
+
     # 퀘스트 1: 놈 처치 (첫 번째 퀘스트 - 자동으로 활성화됨)
     quest_manager.add_quest(Quest(
         quest_id="kill_gnome_2",
@@ -289,7 +326,11 @@ def resume():
 
 def handle_events(event):
     """이벤트 처리"""
-    global cur_character, camera, show_collision_box, tilemap
+    global cur_character, camera, show_collision_box, tilemap, is_ending
+
+    # 엔딩 중에는 입력 무시
+    if is_ending:
+        return
 
     if event.type == SDL_KEYDOWN:
         if event.key == SDLK_ESCAPE:
@@ -313,6 +354,8 @@ def handle_events(event):
                 warrior.IDLE.enter(('STOP', 0))
                 cur_character = 'child'
                 camera.set_target(child)
+                # Child 자동 추적 비활성화 (수동 조작 모드)
+                child.is_following = False
                 # 모든 몬스터들의 추적 대상 변경
                 for obj in world:
                     if hasattr(obj, 'set_target_character'):
@@ -323,6 +366,8 @@ def handle_events(event):
                 child.IDLE.enter(('STOP', 0))
                 cur_character = 'warrior'
                 camera.set_target(warrior)
+                # Child 자동 추적 초기화 (AI 모드로 전환)
+                child.is_following = False
                 # 모든 몬스터들의 추적 대상 변경
                 for obj in world:
                     if hasattr(obj, 'set_target_character'):
@@ -438,9 +483,62 @@ def collide_bb(bb1, bb2):
 
     return True
 
+def fix_tilemap_collisions():
+    """타일맵과 겹친 객체들을 밖으로 밀어내기 (넉백 등으로 인한 충돌 해결)"""
+    if not tilemap:
+        return
+
+    for obj in world:
+        # 바운딩 박스가 있는 객체만 체크
+        if not hasattr(obj, 'get_bb'):
+            continue
+
+        bb = obj.get_bb()
+        if not bb:
+            continue
+
+        obj_width = bb[2] - bb[0]
+        obj_height = bb[3] - bb[1]
+
+        # 현재 위치에서 충돌 체크
+        if tilemap.check_collision(obj.x, obj.y, obj_width, obj_height):
+            # 충돌 시 가장 가까운 안전한 위치 찾기
+            # 8방향으로 체크하여 밀어내기
+            push_distance = 5  # 한 번에 밀어내는 거리 (픽셀)
+            max_attempts = 20  # 최대 시도 횟수
+
+            directions = [
+                (1, 0),   # 오른쪽
+                (-1, 0),  # 왼쪽
+                (0, 1),   # 위
+                (0, -1),  # 아래
+                (1, 1),   # 오른쪽 위
+                (-1, 1),  # 왼쪽 위
+                (1, -1),  # 오른쪽 아래
+                (-1, -1)  # 왼쪽 아래
+            ]
+
+            for attempt in range(max_attempts):
+                found_safe_pos = False
+
+                for dx, dy in directions:
+                    test_x = obj.x + dx * push_distance * (attempt + 1)
+                    test_y = obj.y + dy * push_distance * (attempt + 1)
+
+                    # 테스트 위치가 충돌하지 않으면 이동
+                    if not tilemap.check_collision(test_x, test_y, obj_width, obj_height):
+                        obj.x = test_x
+                        obj.y = test_y
+                        print(f"[FIX] {obj.__class__.__name__} 타일맵 충돌 해제: ({test_x:.0f}, {test_y:.0f})")
+                        found_safe_pos = True
+                        break
+
+                if found_safe_pos:
+                    break
+
 def remove_dead_objects():
     """체력이 0이 된 객체들을 제거"""
-    global world, quest_manager, boss_panda
+    global world, quest_manager, boss_panda, is_ending, ending_timer
 
     # 사망한 객체들을 찾아서 제거
     dead_objects = [obj for obj in world if hasattr(obj, 'is_alive') and not obj.is_alive]
@@ -451,21 +549,48 @@ def remove_dead_objects():
         if quest_manager and monster_name in ['Gnome', 'Paddlefish', 'Panda']:
             quest_manager.on_monster_killed(monster_name)
 
-        # 보스 판다가 죽으면 체력바 비활성화
+        # 보스 판다가 죽으면 체력바 비활성화 및 엔딩 시작
         if obj == boss_panda:
             boss_panda = None
             print("[BOSS] 판다 보스 처치! 체력바 비활성화")
+            # 판다가 죽으면 엔딩 시작
+            if monster_name == 'Panda':
+                is_ending = True
+                ending_timer = 1.0  # 1초 동안 엔딩 화면 표시
+                # 배경음악 정지
+                if bgm:
+                    bgm.stop()
+                print("[ENDING] 게임 클리어! 엔딩 화면 표시")
 
         world.remove(obj)
         print(f"{obj.__class__.__name__}이(가) 월드에서 제거되었습니다.")
 
 def update(delta_time):
     """업데이트"""
-    global camera, tilemap, cur_character
+    global camera, tilemap, cur_character, quest_alarm_timer, is_ending, ending_timer
+
+    # 엔딩 진행 중이면 타이틀로 돌아가기
+    if is_ending:
+        ending_timer -= delta_time
+        if ending_timer <= 0:
+            print("[ENDING] 타이틀 화면으로 복귀")
+            import title_scene
+            game_framework.change_scene(title_scene)
+        return  # 엔딩 중에는 게임 업데이트 중단
+
+    # 퀘스트 알림 타이머 감소
+    if quest_alarm_timer > 0:
+        quest_alarm_timer -= delta_time
+        if quest_alarm_timer < 0:
+            quest_alarm_timer = 0
 
     # 타일맵 업데이트
     if tilemap:
         tilemap.update(delta_time)
+
+    # Child가 Warrior를 자동으로 따라가도록 설정 (Warrior 조작 중일 때만)
+    if cur_character == 'warrior' and child and warrior:
+        child.follow_target(warrior, delta_time)
 
     # 오브젝트 업데이트 (타일맵 충돌 포함)
     for obj in world:
@@ -495,6 +620,9 @@ def update(delta_time):
     # 공격 충돌 체크
     check_attack_collisions()
 
+    # 타일맵 충돌 강제 해제 (넉백 등으로 겹친 경우)
+    fix_tilemap_collisions()
+
     # 사망한 객체 제거
     remove_dead_objects()
 
@@ -508,6 +636,8 @@ def update(delta_time):
         # Warrior로 전환
         cur_character = 'warrior'
         camera.set_target(warrior)
+        # Child 자동 추적 초기화
+        child.is_following = False
         # 모든 몬스터들의 추적 대상 변경
         for obj in world:
             if hasattr(obj, 'set_target_character'):
@@ -602,6 +732,13 @@ def draw_boss_ui():
 def draw():
     """렌더링"""
 
+    # 엔딩 화면 표시 중이면 엔딩 이미지만 표시
+    if is_ending and ending_image:
+        canvas_width = get_canvas_width()
+        canvas_height = get_canvas_height()
+        ending_image.draw(canvas_width // 2, canvas_height // 2, canvas_width, canvas_height)
+        return  # 나머지는 그리지 않음
+
     # 타일맵 그리기
     if tilemap:
         tilemap.draw(camera)
@@ -638,4 +775,12 @@ def draw():
 
     # 보스 UI 그리기 (화면 상단)
     draw_boss_ui()
+
+    # 퀘스트 알림 그리기 (화면 중앙)
+    if quest_alarm_timer > 0 and quest_alarm_image:
+        canvas_width = get_canvas_width()
+        canvas_height = get_canvas_height()
+        alarm_x = canvas_width // 2
+        alarm_y = canvas_height // 2
+        quest_alarm_image.draw(alarm_x, alarm_y, 400, 200)  # 크기 조정 가능
 

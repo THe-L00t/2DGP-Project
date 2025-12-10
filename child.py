@@ -201,6 +201,11 @@ class Child:
         # Warrior 참조 (play_scene에서 설정)
         self.warrior = None
 
+        # 자동 추적 설정
+        self.follow_distance = 200  # 이 거리보다 멀어지면 따라옴
+        self.follow_stop_distance = 100  # 이 거리 이하로 가까워지면 멈춤
+        self.is_following = False  # 현재 따라가는 중인지
+
         self.imageI = load_image('resource/Child_Idle.png')
         self.imageR = load_image('resource/Child_Run.png')
         self.imageInteraction = load_image('resource/Child_Interaction.png')
@@ -222,8 +227,55 @@ class Child:
                            a_down: self.INTERACTION},
                 self.INTERACTION: {}
             })
+    def follow_target(self, target, delta_time):
+        """타겟(warrior)을 따라가는 AI 로직"""
+        if not target or self.state_machine.cur_state == self.INTERACTION:
+            # Interaction 중이거나 타겟이 없으면 따라가지 않음
+            self.is_following = False
+            return
+
+        # 타겟까지의 거리 계산
+        import math
+        dx = target.x - self.x
+        dy = target.y - self.y
+        distance = math.sqrt(dx * dx + dy * dy)
+
+        # 거리에 따라 행동 결정
+        if distance > self.follow_distance:
+            # 너무 멀어지면 따라가기 시작
+            self.is_following = True
+        elif distance < self.follow_stop_distance:
+            # 충분히 가까우면 멈춤
+            self.is_following = False
+
+        # 따라가는 중이면 타겟을 향해 이동
+        if self.is_following and distance > self.follow_stop_distance:
+            # 방향 벡터 정규화
+            self.dirx = dx / distance
+            self.diry = dy / distance
+
+            # 얼굴 방향 설정
+            if self.dirx > 0:
+                self.face_dir = 1
+            elif self.dirx < 0:
+                self.face_dir = -1
+
+            # 이동
+            self.x += self.dirx * MOVE_SPEED * delta_time
+            self.y += self.diry * MOVE_SPEED * delta_time
+
+            # Run 애니메이션 프레임 업데이트
+            self.frame = (self.frame + 8 * delta_time) % 4
+        else:
+            # 멈춰 있으면 Idle 애니메이션
+            self.frame = (self.frame + 8 * delta_time) % 6
+            self.dirx = 0
+            self.diry = 0
+
     def update(self, delta_time):
-        self.state_machine.update(delta_time)
+        # 자동으로 따라가는 중이 아닐 때만 State Machine 업데이트
+        if not self.is_following:
+            self.state_machine.update(delta_time)
 
         # Power 자동 재생 (초당 7씩 회복)
         if self.hp < self.max_hp:
@@ -232,8 +284,28 @@ class Child:
                 self.hp = self.max_hp
 
     def draw(self, camera=None):
-        self.state_machine.draw(camera)
-        pass
+        if camera:
+            screen_x, screen_y = camera.apply(self.x, self.y)
+        else:
+            screen_x, screen_y = self.x, self.y
+
+        # 자동으로 따라가는 중일 때
+        if self.is_following:
+            # Run 애니메이션 표시
+            if self.face_dir == 1:
+                self.imageR.clip_draw(int(self.frame) * 192, 0, 192, 192, screen_x, screen_y)
+            else:
+                self.imageR.clip_composite_draw(int(self.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+        # AI 모드지만 멈춰있을 때 (거리가 가까워서 따라가지 않음)
+        elif self.warrior and self.state_machine.cur_state == self.IDLE and not any(self.keys.values()):
+            # Idle 애니메이션 표시
+            if self.face_dir == 1:
+                self.imageI.clip_draw(int(self.frame) * 192, 0, 192, 192, screen_x, screen_y)
+            else:
+                self.imageI.clip_composite_draw(int(self.frame) * 192, 0, 192, 192, 0, 'h', screen_x, screen_y, 192, 192)
+        else:
+            # State machine의 draw 호출 (수동 조작 중)
+            self.state_machine.draw(camera)
 
     def handle_event(self, event):
         self.state_machine.handle_state_event(('INPUT', event))

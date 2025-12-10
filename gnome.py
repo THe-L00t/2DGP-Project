@@ -29,7 +29,7 @@ ATTACK_BOX_WIDTH = 70      # 공격 박스 가로 크기
 ATTACK_BOX_HEIGHT = 60     # 공격 박스 세로 크기
 
 # 캐릭터 감지 범위
-DETECTION_RANGE = 300  # 추적 범위
+DETECTION_RANGE = 150  # 추적 범위
 ATTACK_DETECTION_RANGE = 50  # 공격 범위 (X축 거리)
 ATTACK_Y_TOLERANCE = 30  # 공격 시 Y축 허용 오차 (캐릭터 Y ± 30 이내여야 공격)
 
@@ -38,7 +38,7 @@ MOVE_SPEED = 200
 CHASE_SPEED = 250
 
 # 체력
-MAX_HP = 100
+MAX_HP = 150
 # ============================================================
 
 class GnomeIdle:
